@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: catalog-api
+    env: docker
+    dockerfilePath: ./catalog-api/Dockerfile
+    context: ./catalog-api
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_HOST
+        fromDatabase:
+          name: coupage-db
+          property: host
+      - key: DB_NAME
+        fromDatabase:
+          name: coupage-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: coupage-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: coupage-db
+          property: password
+      - key: DB_PORT
+        fromDatabase:
+          name: coupage-db
+          property: port
+
+  - type: web
+    name: orders-api
+    env: docker
+    dockerfilePath: ./orders-api/Dockerfile
+    context: ./orders-api
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: NODE_ENV
+        value: "production"
+
+databases:
+  - name: coupage-db
+    databaseName: coupage_db
+    user: postgres
