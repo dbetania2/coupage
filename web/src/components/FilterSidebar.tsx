@@ -1,12 +1,43 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+
+interface Category {
+  id: number;
+  name: string;
+  description?: string;
+}
 
 interface FilterSidebarProps {
   onCategoryChange: (category: string) => void;
   currentCategory: string;
 }
 
+const DEFAULT_CATEGORIES: Category[] = [
+  { id: 1, name: 'Vinos' },
+  { id: 2, name: 'Licores y Espirituosas' },
+  { id: 3, name: 'Delicatessen' },
+];
+
 export default function FilterSidebar({ onCategoryChange, currentCategory }: FilterSidebarProps) {
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+
+  useEffect(() => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+    fetch(`${baseUrl}/categories/`)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        }
+      })
+      .catch(err => {
+        console.warn("No se pudieron cargar las categorías desde la API, usando categorías por defecto.", err);
+      });
+  }, []);
+
   return (
     <aside className="filter-sidebar">
       <div className="filter-header">
@@ -19,35 +50,18 @@ export default function FilterSidebar({ onCategoryChange, currentCategory }: Fil
           <h4>CATEGORÍAS</h4>
           <span>⌄</span>
         </div>
-        <label className="checkbox-label">
-          <input 
-            type="checkbox" 
-            checked={currentCategory === 'Vinos'} 
-            onChange={() => onCategoryChange(currentCategory === 'Vinos' ? '' : 'Vinos')} 
-          />
-          <span className="checkmark"></span>
-          Vinos
-        </label>
-        <label className="checkbox-label">
-          <input 
-            type="checkbox" 
-            checked={currentCategory === 'Licores'} 
-            onChange={() => onCategoryChange(currentCategory === 'Licores' ? '' : 'Licores')} 
-          />
-          <span className="checkmark"></span>
-          Licores y Espirituosas
-        </label>
-        <label className="checkbox-label">
-          <input 
-            type="checkbox" 
-            checked={currentCategory === 'Delicatessen'} 
-            onChange={() => onCategoryChange(currentCategory === 'Delicatessen' ? '' : 'Delicatessen')} 
-          />
-          <span className="checkmark"></span>
-          Delicatessen
-        </label>
+        {categories.map((cat) => (
+          <label key={cat.id} className="checkbox-label">
+            <input 
+              type="checkbox" 
+              checked={currentCategory === cat.name} 
+              onChange={() => onCategoryChange(currentCategory === cat.name ? '' : cat.name)} 
+            />
+            <span className="checkmark"></span>
+            {cat.name}
+          </label>
+        ))}
       </div>
-
     </aside>
   );
 }
