@@ -1,6 +1,12 @@
+'use client';
 import React from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
+  const pathname = usePathname();
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
   return (
     <nav className="navbar">
       <div className="nav-left">
