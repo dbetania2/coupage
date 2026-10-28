@@ -36,10 +36,63 @@
 
 ## ✅ Tareas Completadas (Cerradas / Listas para PR)
 
+### 🔹 [T11] Pantalla de Login de Administrador
+- **Issue en GitHub:** [#18](https://github.com/dbetania2/coupage/issues/18)
+- **Tipo:** Tarea Técnica / Frontend | **Prioridad:** Alta | **Estimación:** 2 SP
+- **Estado:** ✅ Completado
+- **Ubicación:** `web/src/app/admin/login/`, `web/src/lib/auth.ts`
+- **Criterios de Aceptación:**
+  - [x] Formulario con campos Username y Password.
+  - [x] Petición POST al endpoint de Token de Django (`/api/token/`).
+  - [x] Guardado seguro del `access_token` y `refresh` en `localStorage` y en Cookies sincronizadas.
+  - [x] Redirección automática al Dashboard (`/admin`) tras autenticarse con éxito.
+  - [x] Mostrar mensajes de error de autenticación (Ej: Credenciales inválidas o fallas de conexión).
+
+---
+
+### 🔹 [T06] Autenticación JWT en Django (Proteger escritura)
+- **Issue en GitHub:** [#13](https://github.com/dbetania2/coupage/issues/13)
+- **Tipo:** Tarea Técnica / Backend | **Prioridad:** Alta | **Estimación:** 3 SP
+- **Estado:** ✅ Completado
+- **Ubicación:** `catalog-api/catalog/settings.py`, `catalog-api/catalog/urls.py`, `catalog-api/products/views.py`
+- **Criterios de Aceptación:**
+  - [x] Instalar y configurar `djangorestframework-simplejwt` en `requirements.txt` y `settings.py`.
+  - [x] Crear endpoints `/api/token/` y `/api/token/refresh/`.
+  - [x] Aplicar permisos `IsAdminUser` a los métodos POST, PUT, PATCH, DELETE en `ProductViewSet` y `CategoryViewSet`, manteniendo lectura pública (GET) con `AllowAny`.
+  - [x] Cobertura de pruebas unitarias para generación de tokens, denegación no autorizada (401), usuario regular (403) y creación por administrador (201).
+
+---
+
+### 🔹 [T05] Configuración de CORS en Django
+- **Issue en GitHub:** [#12](https://github.com/dbetania2/coupage/issues/12)
+- **Tipo:** Tarea Técnica / Backend | **Prioridad:** Crítica | **Estimación:** 1 SP
+- **Estado:** ✅ Completado
+- **Ubicación:** `catalog-api/catalog/settings.py`, `catalog-api/requirements.txt`
+- **Criterios de Aceptación:**
+  - [x] Instalar la dependencia `django-cors-headers`.
+  - [x] Añadir a `INSTALLED_APPS` y al `MIDDLEWARE` en `settings.py`.
+  - [x] Configurar `CORS_ALLOWED_ORIGINS` (incluyendo `http://localhost:3000` y `http://127.0.0.1:3000`).
+  - [x] Habilitar `CORS_ALLOW_CREDENTIALS = True` para envío seguro de cabeceras de autorización.
+
+---
+
+### 🔹 [T04] Pruebas Unitarias e Integración para Endpoints del Catálogo
+- **Issue en GitHub:** [#11](https://github.com/dbetania2/coupage/issues/11)
+- **Tipo:** Tarea Técnica / QA & Testing | **Prioridad:** Media | **Estimación:** 1 SP
+- **Estado:** ✅ Completado
+- **Ubicación:** `catalog-api/products/tests.py`
+- **Criterios de Aceptación:**
+  - [x] Tests en `products/tests.py` validados con `python manage.py test`.
+  - [x] Prueba de listado de catálogo completo respondiendo `HTTP 200 OK`.
+  - [x] Prueba de filtrado por categoría existente retornando únicamente los productos correspondientes.
+  - [x] Prueba de consulta con categoría inexistente manejando correctamente la respuesta HTTP (retorna 200 OK con lista vacía).
+
+---
+
 ### 🔹 [T02] Desarrollo de Serializadores y Endpoints REST de Consulta (Catalog API)
 - **Issue en GitHub:** [#9](https://github.com/dbetania2/coupage/issues/9)
 - **Rama:** `feature/T02-category-endpoints`
-- **Estado:** ✅ Completado al 100% (4 pruebas unitarias pasando, Swagger validado)
+- **Estado:** ✅ Completado al 100% (pruebas unitarias pasando, Swagger validado)
 - **Criterios de Aceptación:**
   - [x] Serializadores `CategorySerializer` y `ProductSerializer` creados con DRF (`products/serializers.py`).
   - [x] Endpoint `GET /api/categories/` que retorna las categorías activas (`is_active=True`).
