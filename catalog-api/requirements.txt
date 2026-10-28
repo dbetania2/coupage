@@ -1,6 +1,7 @@
 Django>=5.1
 django-cors-headers
 djangorestframework
+djangorestframework-simplejwt
 drf-spectacular
 psycopg2-binary
 python-dotenv
