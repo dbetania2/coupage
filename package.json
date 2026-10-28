@@ -4,9 +4,13 @@
   "private": true,
   "description": "Coupage Monorepo Development Orchestrator",
   "scripts": {
-    "dev": "concurrently -n \"CATALOG,ORDERS\" -c \"blue,green\" \"npm --prefix catalog-api run dev\" \"npm --prefix orders-api run dev\"",
+    "dev": "concurrently -n \"CATALOG,ORDERS,WEB\" -c \"blue,green,magenta\" \"npm --prefix catalog-api run dev\" \"npm --prefix orders-api run dev\" \"npm --prefix web run dev\"",
+    "dev:backend": "concurrently -n \"CATALOG,ORDERS\" -c \"blue,green\" \"npm --prefix catalog-api run dev\" \"npm --prefix orders-api run dev\"",
+    "dev:web": "npm --prefix web run dev",
     "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "docker:all": "docker compose up --build",
+    "docker:down": "docker compose down"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

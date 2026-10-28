@@ -29,3 +29,5 @@ yarn-error.log*
 *.bat
 /context
 bd.md
+
+/doc/priv

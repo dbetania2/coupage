@@ -115,25 +115,36 @@ cd ..
 
 ### Paso 4: Ejecución en Desarrollo (Orquestada o Individual)
 
+> ⚠️ **IMPORTANTE - Orden de Ejecución:** Para probar la web y los microservicios, **la base de datos debe encenderse primero** (Paso 3).
+
 Dependiendo de la etapa de desarrollo en la que estés trabajando, puedes elegir cómo levantar los servicios:
 
-#### 🟢 Opción A: Levantar AMBOS Microservicios (Recomendado para pruebas integrales)
+#### 🟢 Opción A: Levantar TODO el Sistema (APIs + Frontend Web)
 Desde la raíz del proyecto (`/coupage`), ejecuta:
 
 ```bash
 npm run dev
 ```
-*Este comando utiliza `concurrently` para lanzar `catalog-api` (puerto 8000) y `orders-api` (puerto 3000) simultáneamente en una sola terminal.*
+*Este comando utiliza `concurrently` para lanzar `catalog-api` (puerto 8000), `orders-api` (puerto 3000) y el frontend `web` (puerto 3001) simultáneamente en una sola terminal.*
 
 ---
 
-#### 🔵 Opción B: Levantar UN SOLO Microservicio (Para desarrollo enfocado)
-Si solo estás trabajando en un microservicio específico, puedes levantarlo independientemente:
+#### 🔵 Opción B: Levantar por Componentes Separados
+
+* **Solo Backend (Catalog + Orders APIs):**
+  ```bash
+  npm run dev:backend
+  ```
+
+* **Solo Frontend Web (Next.js):**
+  ```bash
+  npm run dev:web
+  ```
 
 * **Solo Catalog API (Django):**
   ```bash
   cd catalog-api
-  source venv/bin/activate
+  source venv/bin/activate  # En Windows: venv\Scripts\activate
   python manage.py runserver
   ```
 
@@ -145,15 +156,28 @@ Si solo estás trabajando en un microservicio específico, puedes levantarlo ind
 
 ---
 
+#### 🐳 Opción C: Modo Full Docker (Despliegue Contenedorizado Completo)
+Para levantar el entorno completo exclusivamente mediante contenedores:
+```bash
+# Iniciar todo contenedorizado:
+npm run docker:all
+
+# Apagar todos los contenedores:
+npm run docker:down
+```
+
+---
+
 ## 🔗 URLs del Entorno de Desarrollo y Documentación Swagger
 
 Una vez ejecutado `npm run dev`, los servicios estarán disponibles en:
 
 | Servicio / Componente | Base de Datos | URL Base | Documentación Swagger UI | Credenciales Dev |
 | :--- | :--- | :--- | :--- | :--- |
-| **Catalog API (Django)** | PostgreSQL | `http://127.0.0.1:8000/` | `http://127.0.0.1:8000/api/docs/` | Panel `/admin/` (Credenciales definidas en `.env`) |
+| **Frontend Web (Next.js)** | N/A | `http://localhost:3001/` | N/A | Interfaz pública tienda |
+| **Catalog API (Django)** | PostgreSQL | `http://127.0.0.1:8000/` | `http://127.0.0.1:8000/api-docs/` | Panel `/admin/` (Credenciales en `.env`) |
 | **Orders API (Node.js)** | Firebase | `http://127.0.0.1:3000/` | `http://127.0.0.1:3000/api-docs/` | *Público* |
-| **PostgreSQL DB Local** | PostgreSQL | `127.0.0.1:5432` | N/A | Host: `127.0.0.1` \| DB: `coupage_db` \| (Credenciales definidas en `.env`) |
+| **PostgreSQL DB Local** | PostgreSQL | `127.0.0.1:5432` | N/A | Host: `127.0.0.1` \| DB: `coupage_db` \| (Credenciales en `.env`) |
 
 ---
 
