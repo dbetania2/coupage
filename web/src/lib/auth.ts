@@ -13,15 +13,19 @@ export const REFRESH_TOKEN_KEY = 'coupage_refresh_token';
 export function setAuthTokens(access: string, refresh?: string) {
   if (typeof window === 'undefined') return;
 
-  // 1. Guardar en localStorage
+  // 1. Guardar en localStorage (todas las variantes para compatibilidad total)
   localStorage.setItem(ACCESS_TOKEN_KEY, access);
+  localStorage.setItem('access_token', access);
+  localStorage.setItem('token', access);
   if (refresh) {
     localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+    localStorage.setItem('refresh_token', refresh);
   }
 
   // 2. Guardar en Cookies para compatibilidad con Middleware y SSR
   const isSecure = window.location.protocol === 'https:';
   document.cookie = `${ACCESS_TOKEN_KEY}=${encodeURIComponent(access)}; path=/; max-age=86400; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+  document.cookie = `access_token=${encodeURIComponent(access)}; path=/; max-age=86400; SameSite=Lax${isSecure ? '; Secure' : ''}`;
   if (refresh) {
     document.cookie = `${REFRESH_TOKEN_KEY}=${encodeURIComponent(refresh)}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
   }
@@ -32,11 +36,12 @@ export function setAuthTokens(access: string, refresh?: string) {
  */
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
-  const local = localStorage.getItem(ACCESS_TOKEN_KEY);
+  const local = localStorage.getItem(ACCESS_TOKEN_KEY) || localStorage.getItem('access_token') || localStorage.getItem('token');
   if (local) return local;
 
   // Fallback leyendo de cookies
-  const match = document.cookie.match(new RegExp('(^| )' + ACCESS_TOKEN_KEY + '=([^;]+)'));
+  const match = document.cookie.match(new RegExp('(^| )' + ACCESS_TOKEN_KEY + '=([^;]+)')) ||
+                document.cookie.match(new RegExp('(^| )access_token=([^;]+)'));
   return match ? decodeURIComponent(match[2]) : null;
 }
 
@@ -45,7 +50,7 @@ export function getAccessToken(): string | null {
  */
 export function getRefreshToken(): string | null {
   if (typeof window === 'undefined') return null;
-  const local = localStorage.getItem(REFRESH_TOKEN_KEY);
+  const local = localStorage.getItem(REFRESH_TOKEN_KEY) || localStorage.getItem('refresh_token');
   if (local) return local;
 
   const match = document.cookie.match(new RegExp('(^| )' + REFRESH_TOKEN_KEY + '=([^;]+)'));
@@ -60,9 +65,13 @@ export function clearAuthTokens() {
 
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('token');
+  localStorage.removeItem('refresh_token');
 
   // Expirar cookies
   document.cookie = `${ACCESS_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+  document.cookie = `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
   document.cookie = `${REFRESH_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
 }
 
@@ -76,7 +85,7 @@ export function isAuthenticated(): boolean {
 /**
  * Decodifica el payload de un token JWT
  */
-export function decodeJwtPayload(token: string): Record<string, any> | null {
+export function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const base64Url = token.split('.')[1];
     if (!base64Url) return null;

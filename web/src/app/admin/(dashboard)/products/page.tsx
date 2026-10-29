@@ -67,7 +67,9 @@ export default function AdminProductsPage() {
   // Helper para peticiones con JWT (Criterio de Aceptación T13)
   const fetchWithAuth = useCallback(async (endpoint: string, options: RequestInit = {}) => {
     const baseUrl = process.env.NEXT_PUBLIC_CATALOG_API_URL || 'http://127.0.0.1:8000/api';
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('access_token') : null;
+    const token = typeof window !== 'undefined'
+      ? localStorage.getItem('coupage_access_token') || localStorage.getItem('token') || localStorage.getItem('access_token')
+      : null;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -173,6 +175,7 @@ export default function AdminProductsPage() {
 
   // Carga inicial de datos
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCategories();
     loadProducts();
   }, [loadCategories, loadProducts]);

@@ -1,9 +1,9 @@
 'use client';
 import React from 'react';
-import ProductCard from './ProductCard';
+import ProductCard, { ProductCardProps } from './ProductCard';
 
 interface ProductGridProps {
-  products: any[];
+  products: ProductCardProps[];
 }
 
 export default function ProductGrid({ products }: ProductGridProps) {

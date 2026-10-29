@@ -2,9 +2,22 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 
+interface ProductDetail {
+  id: number;
+  name: string;
+  description?: string;
+  brand?: { name: string } | null;
+  category?: { name: string } | null;
+  images: { url: string }[];
+  sale_modes: {
+    type: string;
+    prices: { amount: string | number }[];
+  }[];
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams();
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +37,8 @@ export default function ProductDetailPage() {
   if (loading) return <main style={{ padding: '4rem', textAlign: 'center' }}>Cargando joya seleccionada...</main>;
   if (!product) return <main style={{ padding: '4rem', textAlign: 'center' }}>Producto no encontrado</main>;
 
-  const imageUrl = product.images.length > 0 ? product.images[0].url : '';
+  const rawImageUrl = product.images.length > 0 ? product.images[0].url : '';
+  const fallbackImage = 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=600&auto=format&fit=crop';
   const brandName = product.brand ? product.brand.name : '';
   const categoryName = product.category ? product.category.name : '';
   const defaultSaleMode = product.sale_modes.length > 0 ? product.sale_modes[0] : null;
@@ -35,7 +49,18 @@ export default function ProductDetailPage() {
       
       {/* Columna Izquierda: Imagen */}
       <div style={{ flex: 1, backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }}>
-        <img src={imageUrl} alt={product.name} style={{ maxWidth: '100%', maxHeight: '500px', objectFit: 'contain' }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={rawImageUrl || fallbackImage}
+          alt={product.name}
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (target.src !== fallbackImage) {
+              target.src = fallbackImage;
+            }
+          }}
+          style={{ maxWidth: '100%', maxHeight: '500px', objectFit: 'contain' }}
+        />
       </div>
 
       {/* Columna Derecha: Detalles del Producto */}
