@@ -1,0 +1,68 @@
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: var(--transition-smooth);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.iconButton:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.iconButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Tamaños */
+.sm {
+  width: 32px;
+  height: 32px;
+}
+
+.md {
+  width: 40px;
+  height: 40px;
+}
+
+.lg {
+  width: 48px;
+  height: 48px;
+}
+
+/* Variantes */
+.outline {
+  border-color: var(--color-border-subtle);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.outline:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+.filled {
+  background-color: var(--color-gold);
+  color: var(--color-text-inverse);
+  border-color: var(--color-gold);
+}
+
+.filled:hover {
+  background-color: var(--color-gold-hover);
+}
+
+.ghost {
+  border: none;
+  background: transparent;
+}
+
+.ghost:hover {
+  color: var(--color-gold);
+}
+

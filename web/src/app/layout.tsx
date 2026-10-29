@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'Tu Gusto Gourmet | Colección de Grandes Reservas',
-  description: 'Descubra obras maestras embotelladas. Vinos de autor seleccionados meticulosamente.',
+  title: 'Tu Gusto Gourmet | Obras de Autor Embotelladas y Curadas',
+  description: 'Vinos de autor, quesos afinados bajo guarda y piezas exclusivas curadas para paladares gastronómicos exigentes.',
 };
 
 export default function RootLayout({
@@ -16,9 +14,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <Navbar />
         {children}
-        <Footer />
       </body>
     </html>
   );

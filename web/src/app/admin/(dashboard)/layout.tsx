@@ -1,8 +1,8 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import './admin.css';
+import '../admin.css';
 
 export default function AdminLayout({
   children,
@@ -10,16 +10,28 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     // Verificación de autenticación (Criterio de Aceptación T12)
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('access_token') : null;
     
-    // Si no hay token y la pantalla de login está disponible en /login:
+    // Si no hay token, redirigir inmediatamente a la pantalla de login limpia
     if (!token) {
-      // router.push('/login');
+      router.replace('/admin/login');
+    } else {
+      setIsAuthorized(true);
     }
   }, [router]);
+
+  // Si no está autorizado aún, no renderizar el panel ni el sidebar para evitar flash visual
+  if (!isAuthorized) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0a0a0a', color: '#c5a059' }}>
+        <p style={{ letterSpacing: '0.15em', textTransform: 'uppercase', fontSize: '0.85rem' }}>Verificando credenciales...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-layout-container">

@@ -1,18 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+@import '../core/styles/tokens.css';
+@import '../core/styles/typography.css';
 
 :root {
-  /* Paleta de Colores de "Tu Gusto Gourmet" */
-  --bg-dark: #0a0a0a;          /* Fondo principal casi negro */
-  --bg-card: #141414;          /* Fondo de las tarjetas de vino */
-  --bg-input: #1a1a1a;         /* Fondo para inputs y botones secundarios */
+  /* Paleta de Colores de "Tu Gusto Gourmet" (retrocompatibilidad) */
+  --bg-dark: var(--color-bg-base);
+  --bg-card: var(--color-bg-card);
+  --bg-input: var(--color-bg-input);
   
-  --text-primary: #ffffff;     /* Texto principal (títulos) */
-  --text-secondary: #9e9e9e;   /* Texto secundario (descripciones, subtítulos) */
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
   
-  --accent-gold: #d4af37;      /* Dorado premium para botones y detalles (ej: AGREGAR) */
-  --accent-gold-hover: #b5952f;/* Dorado un poco más oscuro para el hover */
+  --accent-gold: var(--color-gold);
+  --accent-gold-hover: var(--color-gold-hover);
   
-  --border-color: #2a2a2a;     /* Color de líneas divisorias sutiles */
+  --border-color: var(--color-border-subtle);
 }
 
 /* Reset y Estilos Base */

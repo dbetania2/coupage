@@ -1,0 +1,76 @@
+/* ==========================================================================
+   Design Tokens - Tu Gusto Gourmet
+   Estética enológica, editorial y premium
+   ========================================================================== */
+
+:root {
+  /* Paleta cromática enológica y de superficies oscuras */
+  --color-bg-base: #080808;
+  --color-bg-surface: #121212;
+  --color-bg-surface-elevated: #181716;
+  --color-bg-card: #131211;
+  --color-bg-input: #1b1a19;
+
+  /* Acentos dorados */
+  --color-gold: #c5a059;
+  --color-gold-light: #dfbe7d;
+  --color-gold-hover: #b08d46;
+  --color-gold-muted: rgba(197, 160, 89, 0.15);
+
+  /* Bordes sutiles y de contraste */
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-medium: rgba(255, 255, 255, 0.16);
+  --color-border-gold: rgba(197, 160, 89, 0.35);
+
+  /* Escala de texto */
+  --color-text-primary: #f5f4f0;
+  --color-text-secondary: #a39e94;
+  --color-text-muted: #6e6960;
+  --color-text-inverse: #080808;
+
+  /* Tipografías */
+  --font-serif: var(--font-playfair), 'Playfair Display', Georgia, serif;
+  --font-sans: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Escala tipográfica */
+  --text-xs: 0.6875rem;    /* 11px */
+  --text-sm: 0.8125rem;    /* 13px */
+  --text-base: 0.9375rem;  /* 15px */
+  --text-md: 1.0625rem;    /* 17px */
+  --text-lg: 1.25rem;      /* 20px */
+  --text-xl: 1.625rem;     /* 26px */
+  --text-2xl: 2.125rem;    /* 34px */
+  --text-3xl: 2.875rem;    /* 46px */
+  --text-4xl: 3.75rem;     /* 60px */
+
+  /* Espaciado modular (8-point system) */
+  --space-2xs: 0.25rem;   /* 4px */
+  --space-xs: 0.5rem;     /* 8px */
+  --space-sm: 1rem;       /* 16px */
+  --space-md: 1.5rem;     /* 24px */
+  --space-lg: 2rem;       /* 32px */
+  --space-xl: 3rem;       /* 48px */
+  --space-2xl: 5rem;      /* 80px */
+  --space-3xl: 7.5rem;    /* 120px */
+
+  /* Estructura y contenedores */
+  --container-max-width: 1280px;
+  --container-narrow-max-width: 1040px;
+  --container-padding: 1.5rem;
+
+  /* Alturas de UI */
+  --header-height: 84px;
+
+  /* Radios y bordes */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-full: 9999px;
+
+  /* Transiciones y Sombras */
+  --transition-fast: 150ms ease-in-out;
+  --transition-smooth: 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
