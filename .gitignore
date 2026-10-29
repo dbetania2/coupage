@@ -24,6 +24,9 @@ yarn-error.log*
 # Bases de datos locales
 **/*.sqlite3
 
+# Estáticos recolectados para Gunicorn/WhiteNoise
+**/staticfiles/
+
 # Automatizaciones y scripts locales
 *.sh
 *.bat

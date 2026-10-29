@@ -2,7 +2,9 @@ Django>=5.1
 django-cors-headers
 djangorestframework
 drf-spectacular
+gunicorn
 psycopg2-binary
 python-dotenv
 sqlparse
 tzdata
+whitenoise

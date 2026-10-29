@@ -159,9 +159,11 @@ Una vez ejecutado `npm run dev`, los servicios estarán disponibles en:
 
 ## ☁️ Despliegue en la Nube (Render)
 
-El proyecto incluye el archivo **`render.yaml`** (Blueprint) en la raíz. Para desplegar en Render:
+El proyecto incluye el archivo **`render.yaml`** (Blueprint) en la raíz. `catalog-api` arranca con **Gunicorn**, corre migraciones y `collectstatic`, y se conecta a Postgres con SSL.
 
 1. Crea una cuenta en [Render.com](https://render.com).
 2. Haz clic en **New +** -> **Blueprint**.
 3. Conecta este repositorio de GitHub.
 4. Render creará la base de datos PostgreSQL y los dos microservicios automáticamente.
+
+Firebase de `orders-api` se configura después (variables en el dashboard de Render). El front Next.js no está en el Blueprint.

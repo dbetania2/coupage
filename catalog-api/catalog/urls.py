@@ -22,5 +22,5 @@ urlpatterns = [
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# En Render no hay nginx: las imágenes del catálogo van en el propio proceso.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
