@@ -1,0 +1,153 @@
+.section {
+  padding: var(--space-3xl) 0;
+  background-color: var(--color-bg-base);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: var(--space-2xl);
+  align-items: center;
+}
+
+.textColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.kicker {
+  margin-bottom: 0.75rem;
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 3.8vw, 3rem);
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-md);
+}
+
+.paragraphs {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.75;
+  color: var(--color-text-secondary);
+  font-weight: 300;
+  margin-bottom: var(--space-xl);
+}
+
+.signatureBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.badgeIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-gold);
+  color: var(--color-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.badgeText {
+  display: flex;
+  flex-direction: column;
+}
+
+.founderName {
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  color: var(--color-text-primary);
+}
+
+.founderRole {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* Mosaico fotográfico asimétrico */
+.mosaicColumn {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1rem;
+  height: 520px;
+}
+
+.mainImageWrapper {
+  position: relative;
+  height: 100%;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.sideImages {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 1rem;
+  height: 100%;
+}
+
+.topSideImageWrapper,
+.bottomSideImageWrapper {
+  position: relative;
+  height: 100%;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.image {
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.mainImageWrapper:hover .image,
+.topSideImageWrapper:hover .image,
+.bottomSideImageWrapper:hover .image {
+  transform: scale(1.04);
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  .mosaicColumn {
+    height: 420px;
+  }
+}
+
+@media (max-width: 600px) {
+  .mosaicColumn {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .mainImageWrapper {
+    height: 300px;
+  }
+
+  .sideImages {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    height: 160px;
+  }
+}
+

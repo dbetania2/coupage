@@ -1,0 +1,46 @@
+.form {
+  width: 100%;
+  max-width: 440px;
+}
+
+.inputGroup {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border-subtle);
+  transition: var(--transition-smooth);
+}
+
+.inputGroup:focus-within {
+  border-bottom-color: var(--color-gold);
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.875rem 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  letter-spacing: 0.16em;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.submitBtn {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+}
+
+.successMessage {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  color: var(--color-gold);
+  padding: 0.75rem 0;
+}
+
