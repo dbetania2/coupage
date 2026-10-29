@@ -4,12 +4,12 @@ from .models import Category, Brand, Product, ProductImage, ProductSaleMode, Pri
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name', 'description']
+        fields = ['id', 'name', 'description', 'is_active']
 
 class BrandSerializer(serializers.ModelSerializer):
     class Meta:
         model = Brand
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'is_active']
 
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -37,9 +37,15 @@ class ProductSaleModeSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     brand = BrandSerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), source='category', write_only=True, required=False
+    )
+    brand_id = serializers.PrimaryKeyRelatedField(
+        queryset=Brand.objects.all(), source='brand', write_only=True, required=False, allow_null=True
+    )
     images = ProductImageSerializer(many=True, read_only=True)
     sale_modes = ProductSaleModeSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'category', 'brand', 'images', 'sale_modes']
+        fields = ['id', 'name', 'description', 'category', 'brand', 'category_id', 'brand_id', 'images', 'sale_modes', 'is_active']

@@ -1,0 +1,25 @@
+.label {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.kicker {
+  font-size: var(--text-xs);
+  color: var(--color-gold);
+}
+
+.badge {
+  font-size: 0.625rem;
+  padding: 0.25rem 0.625rem;
+  background-color: rgba(10, 10, 10, 0.85);
+  border: 1px solid var(--color-border-gold);
+  color: var(--color-gold);
+  border-radius: var(--radius-xs);
+  backdrop-filter: blur(4px);
+}
+

@@ -1,0 +1,147 @@
+.footer {
+  background-color: #060606;
+  padding-top: var(--space-3xl);
+  padding-bottom: var(--space-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.topSection {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--space-2xl);
+  padding-bottom: var(--space-2xl);
+  border-bottom: 1px solid var(--color-border-subtle);
+  position: relative;
+  z-index: 2;
+}
+
+.newsletterBlock {
+  max-width: 480px;
+}
+
+.newsletterTitle {
+  font-family: var(--font-serif);
+  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+  font-weight: 400;
+  color: var(--color-text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.newsletterDesc {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.linksNav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+}
+
+.columnTitle {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+  margin-bottom: 1.25rem;
+  font-weight: 500;
+}
+
+.linkList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.linkList a {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  transition: var(--transition-smooth);
+}
+
+.linkList a:hover {
+  color: var(--color-gold);
+}
+
+/* Marca de agua gigante con opacidad muy baja */
+.watermarkWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 0 1.5rem;
+  user-select: none;
+  pointer-events: none;
+}
+
+.watermark {
+  font-family: var(--font-serif);
+  font-size: clamp(3.5rem, 13vw, 11rem);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.035);
+  text-transform: uppercase;
+  line-height: 0.85;
+  white-space: nowrap;
+}
+
+.bottomBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-md);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.copyright {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+}
+
+.legalLinks {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.legalLinks a {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  transition: var(--transition-fast);
+}
+
+.legalLinks a:hover {
+  color: var(--color-gold);
+}
+
+@media (max-width: 900px) {
+  .topSection {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  .bottomBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .linksNav {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
