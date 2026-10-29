@@ -15,6 +15,7 @@ export default function SiteHeader() {
         {/* Navegación izquierda */}
         <nav className={styles.navLeft} aria-label="Navegación principal">
           <Link href="/" className={styles.navLink}>Inicio</Link>
+          <Link href="/catalogo" className={styles.navLink}>Catálogo</Link>
           <Link href="#colecciones" className={styles.navLink}>Colecciones</Link>
           <Link href="#bodega" className={styles.navLink}>Bodega de Autor</Link>
           <Link href="#atelier" className={styles.navLink}>Atelier</Link>
@@ -83,6 +84,7 @@ export default function SiteHeader() {
         <div className={styles.mobileDrawer}>
           <nav className={styles.mobileNav}>
             <Link href="/" className={styles.mobileNavLink} onClick={() => setIsMobileMenuOpen(false)}>Inicio</Link>
+            <Link href="/catalogo" className={styles.mobileNavLink} onClick={() => setIsMobileMenuOpen(false)}>Catálogo</Link>
             <Link href="#colecciones" className={styles.mobileNavLink} onClick={() => setIsMobileMenuOpen(false)}>Colecciones</Link>
             <Link href="#bodega" className={styles.mobileNavLink} onClick={() => setIsMobileMenuOpen(false)}>Bodega de Autor</Link>
             <Link href="#atelier" className={styles.mobileNavLink} onClick={() => setIsMobileMenuOpen(false)}>Atelier</Link>
