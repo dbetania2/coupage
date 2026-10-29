@@ -1,5 +1,6 @@
 # Ignora archivos de variables de entorno en cualquier carpeta
 .env
+.env.*
 .env.local
 .env.*.local
 

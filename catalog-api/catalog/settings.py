@@ -17,12 +17,17 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("La variable de entorno SECRET_KEY es requerida en el archivo .env.")
 
+# Modo depuración: False en producción (Render) para ocultar trazas de error sensibles
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '*').split(',') if h.strip()]
+# Seguridad: ALLOWED_HOSTS restringido (soporta Render y localhost)
+raw_allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com')
+ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(',') if h.strip()]
 _render_host = os.getenv('RENDER_EXTERNAL_HOSTNAME')
 if _render_host and _render_host not in ALLOWED_HOSTS and '*' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(_render_host)
+if DEBUG and '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('*')
 
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
 if _render_host:
@@ -30,9 +35,8 @@ if _render_host:
     if _render_origin not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(_render_origin)
 
-if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    USE_X_FORWARDED_HOST = True
+# Control de exposición: permite encender/apagar Swagger en Render desde variables de entorno
+ENABLE_SWAGGER = os.getenv('ENABLE_SWAGGER', 'True') == 'True'
 
 # Application definition
 INSTALLED_APPS = [
@@ -95,22 +99,68 @@ elif os.getenv('DB_ENGINE') == 'sqlite':
         }
     }
 else:
+    # Selector de Entorno de Base de Datos: 'local' (por defecto) o 'render'
+    db_mode = os.getenv('DB_MODE', 'local').strip().lower()
+
     _sslmode = os.getenv('DB_SSLMODE')
     if not _sslmode:
-        _sslmode = 'disable' if DEBUG else 'require'
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'coupage_db'),
-            'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-            'OPTIONS': {
-                'sslmode': _sslmode,
-            },
+        _sslmode = 'disable' if (DEBUG or db_mode == 'local') else 'require'
+
+    if db_mode == 'render':
+        # Conexión externa a Render (Producción)
+        # Permite URL completa (RENDER_DATABASE_URL) o variables individuales (RENDER_DB_*)
+        render_url = os.getenv('RENDER_DATABASE_URL') or os.getenv('RENDER_DB_HOST', '')
+        if render_url.startswith(('postgres://', 'postgresql://')):
+            from urllib.parse import urlparse, unquote
+            parsed = urlparse(render_url)
+            db_name = parsed.path.lstrip('/') or os.getenv('RENDER_DB_NAME', 'coupage_db')
+            db_user = unquote(parsed.username) if parsed.username else os.getenv('RENDER_DB_USER', 'postgres')
+            db_pass = unquote(parsed.password) if parsed.password else os.getenv('RENDER_DB_PASSWORD', '')
+            db_host = parsed.hostname
+            db_port = parsed.port or '5432'
+        else:
+            db_name = os.getenv('RENDER_DB_NAME', os.getenv('DB_NAME', 'coupage_db'))
+            db_user = os.getenv('RENDER_DB_USER', os.getenv('DB_USER', 'postgres'))
+            db_pass = os.getenv('RENDER_DB_PASSWORD', os.getenv('DB_PASSWORD', ''))
+            db_host = os.getenv('RENDER_DB_HOST', os.getenv('DB_HOST'))
+            db_port = os.getenv('RENDER_DB_PORT', os.getenv('DB_PORT', '5432'))
+
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': db_name,
+                'USER': db_user,
+                'PASSWORD': db_pass,
+                'HOST': db_host,
+                'PORT': db_port,
+                'OPTIONS': {
+                    'sslmode': _sslmode,
+                },
+            }
         }
-    }
+        if len(sys.argv) > 1 and sys.argv[1] != 'test':
+            sys.stderr.write(f"\n⚠️  [CATALOG-API] ATENCIÓN: Conectado a Base de Datos RENDER ({db_host})\n\n")
+
+    else:
+        # Conexión Local (Desarrollo diario)
+        db_name = os.getenv('LOCAL_DB_NAME', os.getenv('DB_NAME', 'coupage_db'))
+        db_user = os.getenv('LOCAL_DB_USER', os.getenv('DB_USER', 'postgres'))
+        db_pass = os.getenv('LOCAL_DB_PASSWORD', os.getenv('DB_PASSWORD', 'postgrespassword'))
+        db_host = os.getenv('LOCAL_DB_HOST', os.getenv('DB_HOST', '127.0.0.1'))
+        db_port = os.getenv('LOCAL_DB_PORT', os.getenv('DB_PORT', '5432'))
+
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': db_name,
+                'USER': db_user,
+                'PASSWORD': db_pass,
+                'HOST': db_host,
+                'PORT': db_port,
+            }
+        }
+        if len(sys.argv) > 1 and sys.argv[1] != 'test':
+            sys.stderr.write(f"\n💻 [CATALOG-API] Usando Base de Datos: LOCAL ({db_host})\n\n")
 
 # REST Framework & Swagger OpenAPI Configuration
 REST_FRAMEWORK = {
@@ -160,8 +210,27 @@ STORAGES = {
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# Orígenes permitidos para CORS: admite Next.js local (puertos 3000/3001) y dominios de producción vía ENV
+raw_cors_origins = os.getenv(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001'
+)
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in raw_cors_origins.split(',') if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
+
+# Cabeceras de seguridad y endurecimiento en producción cuando DEBUG=False
+if not DEBUG:
+    # Confía en el encabezado de proxy SSL provisto por Render (evita bucles infinitos de redirección)
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Protección contra ataques XSS en navegadores heredados
+    SECURE_BROWSER_XSS_FILTER = True
+    # Previene ataques basados en confusión de tipo MIME (MIME-sniffing)
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    # Mitiga Clickjacking impidiendo que la API sea embebida en iframes
+    X_FRAME_OPTIONS = 'DENY'
+    # Redirección obligatoria a HTTPS en producción (configurable por variable de entorno)
+    SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True') == 'True'
+    # Garantiza que cookies de sesión y CSRF sólo se transmitan por canales cifrados (HTTPS)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
