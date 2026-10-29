@@ -2,6 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { clearAuthTokens } from '@/lib/auth';
 
 interface NavItem {
   label: string;
@@ -83,10 +84,8 @@ export default function AdminSidebar() {
 
   const handleLogout = () => {
     // Elimina tokens de sesión y redirige al inicio o login
+    clearAuthTokens();
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
       sessionStorage.clear();
     }
     router.push('/');

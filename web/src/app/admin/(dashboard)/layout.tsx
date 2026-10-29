@@ -14,7 +14,9 @@ export default function AdminLayout({
 
   useEffect(() => {
     // Verificación de autenticación (Criterio de Aceptación T12)
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('access_token') : null;
+    const token = typeof window !== 'undefined'
+      ? localStorage.getItem('coupage_access_token') || localStorage.getItem('token') || localStorage.getItem('access_token')
+      : null;
     
     // Si no hay token, redirigir inmediatamente a la pantalla de login limpia
     if (!token) {
