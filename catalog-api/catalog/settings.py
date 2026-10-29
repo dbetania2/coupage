@@ -89,16 +89,61 @@ elif os.getenv('DB_ENGINE') == 'sqlite':
         }
     }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'coupage_db'),
-            'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-            'PORT': os.getenv('DB_PORT', '5432'),
+    # Selector de Entorno de Base de Datos: 'local' (por defecto) o 'render'
+    db_mode = os.getenv('DB_MODE', 'local').strip().lower()
+
+    if db_mode == 'render':
+        # Conexión externa a Render (Producción)
+        # Permite URL completa (RENDER_DATABASE_URL) o variables individuales (RENDER_DB_*)
+        render_url = os.getenv('RENDER_DATABASE_URL') or os.getenv('RENDER_DB_HOST', '')
+        if render_url.startswith(('postgres://', 'postgresql://')):
+            from urllib.parse import urlparse, unquote
+            parsed = urlparse(render_url)
+            db_name = parsed.path.lstrip('/') or os.getenv('RENDER_DB_NAME', 'coupage_db')
+            db_user = unquote(parsed.username) if parsed.username else os.getenv('RENDER_DB_USER', 'postgres')
+            db_pass = unquote(parsed.password) if parsed.password else os.getenv('RENDER_DB_PASSWORD', '')
+            db_host = parsed.hostname
+            db_port = parsed.port or '5432'
+        else:
+            db_name = os.getenv('RENDER_DB_NAME', os.getenv('DB_NAME', 'coupage_db'))
+            db_user = os.getenv('RENDER_DB_USER', os.getenv('DB_USER', 'postgres'))
+            db_pass = os.getenv('RENDER_DB_PASSWORD', os.getenv('DB_PASSWORD', ''))
+            db_host = os.getenv('RENDER_DB_HOST', os.getenv('DB_HOST'))
+            db_port = os.getenv('RENDER_DB_PORT', os.getenv('DB_PORT', '5432'))
+
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': db_name,
+                'USER': db_user,
+                'PASSWORD': db_pass,
+                'HOST': db_host,
+                'PORT': db_port,
+            }
         }
-    }
+        if len(sys.argv) > 1 and sys.argv[1] != 'test':
+            sys.stderr.write(f"\n⚠️  [CATALOG-API] ATENCIÓN: Conectado a Base de Datos RENDER ({db_host})\n\n")
+
+    else:
+        # Conexión Local (Desarrollo diario)
+        db_name = os.getenv('LOCAL_DB_NAME', os.getenv('DB_NAME', 'coupage_db'))
+        db_user = os.getenv('LOCAL_DB_USER', os.getenv('DB_USER', 'postgres'))
+        db_pass = os.getenv('LOCAL_DB_PASSWORD', os.getenv('DB_PASSWORD', 'postgrespassword'))
+        db_host = os.getenv('LOCAL_DB_HOST', os.getenv('DB_HOST', '127.0.0.1'))
+        db_port = os.getenv('LOCAL_DB_PORT', os.getenv('DB_PORT', '5432'))
+
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': db_name,
+                'USER': db_user,
+                'PASSWORD': db_pass,
+                'HOST': db_host,
+                'PORT': db_port,
+            }
+        }
+        if len(sys.argv) > 1 and sys.argv[1] != 'test':
+            sys.stderr.write(f"\n💻 [CATALOG-API] Usando Base de Datos: LOCAL ({db_host})\n\n")
 
 # REST Framework & Swagger OpenAPI Configuration
 REST_FRAMEWORK = {
