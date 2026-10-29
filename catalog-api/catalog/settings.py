@@ -106,24 +106,25 @@ else:
     if not _sslmode:
         _sslmode = 'disable' if (DEBUG or db_mode == 'local') else 'require'
 
-    if db_mode == 'render':
-        # Conexión externa a Render (Producción)
-        # Permite URL completa (RENDER_DATABASE_URL) o variables individuales (RENDER_DB_*)
+    is_on_render = bool(os.getenv('RENDER') or os.getenv('RENDER_EXTERNAL_HOSTNAME'))
+
+    if is_on_render or db_mode == 'render':
+        # Conexión a Render (Producción o Externa)
         render_url = os.getenv('RENDER_DATABASE_URL') or os.getenv('RENDER_DB_HOST', '')
         if render_url.startswith(('postgres://', 'postgresql://')):
             from urllib.parse import urlparse, unquote
             parsed = urlparse(render_url)
-            db_name = parsed.path.lstrip('/') or os.getenv('RENDER_DB_NAME', 'coupage_db')
-            db_user = unquote(parsed.username) if parsed.username else os.getenv('RENDER_DB_USER', 'postgres')
-            db_pass = unquote(parsed.password) if parsed.password else os.getenv('RENDER_DB_PASSWORD', '')
+            db_name = parsed.path.lstrip('/') or os.getenv('RENDER_DB_NAME', os.getenv('DB_NAME', 'coupage_db'))
+            db_user = unquote(parsed.username) if parsed.username else os.getenv('RENDER_DB_USER', os.getenv('DB_USER', 'postgres'))
+            db_pass = unquote(parsed.password) if parsed.password else os.getenv('RENDER_DB_PASSWORD', os.getenv('DB_PASSWORD', ''))
             db_host = parsed.hostname
-            db_port = parsed.port or '5432'
+            db_port = parsed.port or os.getenv('DB_PORT', '5432')
         else:
-            db_name = os.getenv('RENDER_DB_NAME', os.getenv('DB_NAME', 'coupage_db'))
-            db_user = os.getenv('RENDER_DB_USER', os.getenv('DB_USER', 'postgres'))
-            db_pass = os.getenv('RENDER_DB_PASSWORD', os.getenv('DB_PASSWORD', ''))
-            db_host = os.getenv('RENDER_DB_HOST', os.getenv('DB_HOST'))
-            db_port = os.getenv('RENDER_DB_PORT', os.getenv('DB_PORT', '5432'))
+            db_name = os.getenv('DB_NAME') or os.getenv('RENDER_DB_NAME', 'coupage_db')
+            db_user = os.getenv('DB_USER') or os.getenv('RENDER_DB_USER', 'postgres')
+            db_pass = os.getenv('DB_PASSWORD') or os.getenv('RENDER_DB_PASSWORD', '')
+            db_host = os.getenv('DB_HOST') or os.getenv('RENDER_DB_HOST', '127.0.0.1')
+            db_port = os.getenv('DB_PORT') or os.getenv('RENDER_DB_PORT', '5432')
 
         DATABASES = {
             'default': {
@@ -139,7 +140,8 @@ else:
             }
         }
         if len(sys.argv) > 1 and sys.argv[1] != 'test':
-            sys.stderr.write(f"\n⚠️  [CATALOG-API] ATENCIÓN: Conectado a Base de Datos RENDER ({db_host})\n\n")
+            tag = "☁️  [CATALOG-API] Ejecutando en RENDER Cloud" if is_on_render else "⚠️  [CATALOG-API] ATENCIÓN: Conectado a Base de Datos RENDER"
+            sys.stderr.write(f"\n{tag} ({db_host})\n\n")
 
     else:
         # Conexión Local (Desarrollo diario)
@@ -210,12 +212,33 @@ STORAGES = {
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-# Orígenes permitidos para CORS: admite Next.js local (puertos 3000/3001) y dominios de producción vía ENV
-raw_cors_origins = os.getenv(
-    'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001'
-)
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in raw_cors_origins.split(',') if origin.strip()]
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Orígenes permitidos para CORS:
+# En producción solo acepta orígenes explícitos configurados vía variable de entorno.
+# Los puertos localhost solo se habilitan automáticamente en desarrollo local (DEBUG=True).
+raw_cors_origins = os.getenv('CORS_ALLOWED_ORIGINS')
+
+if raw_cors_origins:
+    if raw_cors_origins.strip().lower() in ('true', '1', '*', 'all'):
+        # Si se especificó comodín abierto
+        CORS_ALLOW_ALL_ORIGINS = True
+        CORS_ALLOWED_ORIGINS = []
+    else:
+        # En producción estricta: solo URLs válidas con https:// (o http://)
+        CORS_ALLOWED_ORIGINS = [
+            origin.strip() for origin in raw_cors_origins.split(',')
+            if origin.strip().startswith(('http://', 'https://'))
+        ]
+else:
+    # Entorno local de desarrollo por defecto (nunca expone localhost si DEBUG=False)
+    CORS_ALLOWED_ORIGINS = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+    ] if DEBUG else []
+
 CORS_ALLOW_CREDENTIALS = True
 
 # Cabeceras de seguridad y endurecimiento en producción cuando DEBUG=False
