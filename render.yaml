@@ -45,7 +45,7 @@ services:
     startCommand: npm start
     envVars:
       - key: NEXT_PUBLIC_CATALOG_API_URL
-        value: "ACA_VA_LA_URL_DE_DJANGO" 
+        value: https://coupage.onrender.com/api 
 
 databases:
   - name: coupage-db

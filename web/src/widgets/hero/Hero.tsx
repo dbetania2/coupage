@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import Container from '@/shared/ui/Container';
 import Button from '@/shared/ui/Button';
 import Label from '@/shared/ui/Label';
@@ -30,15 +31,11 @@ export default function Hero() {
           </p>
 
           <div className={styles.actions}>
-            <Button
-              variant="primary"
-              size="md"
-              onClick={() => {
-                document.getElementById('solicitados')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              EXPLORAR CATÁLOGO <span className={styles.arrow}>→</span>
-            </Button>
+            <Link href="/catalogo" style={{ textDecoration: 'none' }}>
+              <Button variant="primary" size="md">
+                EXPLORAR CATÁLOGO <span className={styles.arrow}>→</span>
+              </Button>
+            </Link>
 
             <Button
               variant="outline"
