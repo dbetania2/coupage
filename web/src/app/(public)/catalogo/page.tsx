@@ -9,7 +9,7 @@ export default function Home() {
 
   // Efecto que llama a Django cada vez que cambia la categoría seleccionada
   useEffect(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+    const baseUrl = process.env.NEXT_PUBLIC_CATALOG_API_URL || 'http://127.0.0.1:8000/api';
     let url = `${baseUrl}/products/`;
     if (selectedCategory) {
       url += `?category=${selectedCategory}`;

@@ -17,7 +17,7 @@ npm run dev:web   # (alternativa) Solo la web
 ```
 
 - Web: `http://localhost:3001`
-- La URL del backend se define en `web/.env.local` → `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api`
+- La URL del backend se define en `web/.env.local` → `NEXT_PUBLIC_CATALOG_API_URL=http://127.0.0.1:8000/api`
 
 ---
 
