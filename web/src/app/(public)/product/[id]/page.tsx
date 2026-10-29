@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 interface ProductDetail {
@@ -23,26 +24,42 @@ export default function ProductDetailPage() {
   useEffect(() => {
     const baseUrl = process.env.NEXT_PUBLIC_CATALOG_API_URL || 'http://127.0.0.1:8000/api';
     fetch(`${baseUrl}/products/${id}/`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+        return res.json();
+      })
       .then(data => {
-        setProduct(data);
+        if (data && data.id) {
+          setProduct(data);
+        } else {
+          setProduct(null);
+        }
         setLoading(false);
       })
       .catch(err => {
         console.error("Error al cargar producto:", err);
+        setProduct(null);
         setLoading(false);
       });
   }, [id]);
 
-  if (loading) return <main style={{ padding: '4rem', textAlign: 'center' }}>Cargando joya seleccionada...</main>;
-  if (!product) return <main style={{ padding: '4rem', textAlign: 'center' }}>Producto no encontrado</main>;
+  if (loading) return <main style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Cargando joya seleccionada...</main>;
+  if (!product) return (
+    <main style={{ padding: '4rem', textAlign: 'center' }}>
+      <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Producto no encontrado</h2>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>La joya gastronómica solicitada no está disponible o el identificador es incorrecto.</p>
+      <Link href="/catalogo" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>
+        ← Volver al Catálogo Público
+      </Link>
+    </main>
+  );
 
-  const rawImageUrl = product.images.length > 0 ? product.images[0].url : '';
+  const rawImageUrl = (product.images && product.images.length > 0) ? product.images[0].url : '';
   const fallbackImage = 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=600&auto=format&fit=crop';
-  const brandName = product.brand ? product.brand.name : '';
+  const brandName = product.brand ? product.brand.name : 'Coupage';
   const categoryName = product.category ? product.category.name : '';
-  const defaultSaleMode = product.sale_modes.length > 0 ? product.sale_modes[0] : null;
-  const price = defaultSaleMode && defaultSaleMode.prices.length > 0 ? defaultSaleMode.prices[0].amount : 'Consultar';
+  const defaultSaleMode = (product.sale_modes && product.sale_modes.length > 0) ? product.sale_modes[0] : null;
+  const price = defaultSaleMode && defaultSaleMode.prices && defaultSaleMode.prices.length > 0 ? defaultSaleMode.prices[0].amount : 'Consultar';
 
   return (
     <main style={{ padding: '4rem', maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '4rem' }}>
