@@ -4,6 +4,7 @@
   "private": true,
   "description": "Catalog Microservice API - Django",
   "scripts": {
-    "dev": "python manage.py runserver 0.0.0.0:8000"
+    "dev": "python manage.py runserver 0.0.0.0:8000",
+    "start": "python entrypoint.py"
   }
 }

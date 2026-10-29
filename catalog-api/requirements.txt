@@ -3,7 +3,9 @@ django-cors-headers
 djangorestframework
 djangorestframework-simplejwt
 drf-spectacular
+gunicorn
 psycopg2-binary
 python-dotenv
 sqlparse
 tzdata
+whitenoise

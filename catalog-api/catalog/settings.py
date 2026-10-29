@@ -20,11 +20,20 @@ if not SECRET_KEY:
 # Modo depuración: False en producción (Render) para ocultar trazas de error sensibles
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-# Seguridad: ALLOWED_HOSTS restringido (evita ataques de Host Header Poisoning)
+# Seguridad: ALLOWED_HOSTS restringido (soporta Render y localhost)
 raw_allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com')
-ALLOWED_HOSTS = [host.strip() for host in raw_allowed_hosts.split(',') if host.strip()]
+ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(',') if h.strip()]
+_render_host = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if _render_host and _render_host not in ALLOWED_HOSTS and '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_render_host)
 if DEBUG and '*' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append('*')
+
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+if _render_host:
+    _render_origin = f'https://{_render_host}'
+    if _render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_render_origin)
 
 # Control de exposición: permite encender/apagar Swagger en Render desde variables de entorno
 ENABLE_SWAGGER = os.getenv('ENABLE_SWAGGER', 'True') == 'True'
@@ -45,6 +54,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -92,6 +102,10 @@ else:
     # Selector de Entorno de Base de Datos: 'local' (por defecto) o 'render'
     db_mode = os.getenv('DB_MODE', 'local').strip().lower()
 
+    _sslmode = os.getenv('DB_SSLMODE')
+    if not _sslmode:
+        _sslmode = 'disable' if (DEBUG or db_mode == 'local') else 'require'
+
     if db_mode == 'render':
         # Conexión externa a Render (Producción)
         # Permite URL completa (RENDER_DATABASE_URL) o variables individuales (RENDER_DB_*)
@@ -119,6 +133,9 @@ else:
                 'PASSWORD': db_pass,
                 'HOST': db_host,
                 'PORT': db_port,
+                'OPTIONS': {
+                    'sslmode': _sslmode,
+                },
             }
         }
         if len(sys.argv) > 1 and sys.argv[1] != 'test':
@@ -181,6 +198,15 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

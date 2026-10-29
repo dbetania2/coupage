@@ -1,14 +1,20 @@
 services:
+  # 1. Backend Django 
   - type: web
     name: catalog-api
-    env: docker
+    runtime: docker
     dockerfilePath: ./catalog-api/Dockerfile
-    context: ./catalog-api
+    dockerContext: ./catalog-api
+    healthCheckPath: /
     envVars:
       - key: DEBUG
         value: "False"
       - key: SECRET_KEY
         generateValue: true
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: DB_SSLMODE
+        value: require
       - key: DB_HOST
         fromDatabase:
           name: coupage-db
@@ -30,16 +36,16 @@ services:
           name: coupage-db
           property: port
 
+  # 2. Frontend Web
   - type: web
-    name: orders-api
-    env: docker
-    dockerfilePath: ./orders-api/Dockerfile
-    context: ./orders-api
+    name: frontend-web
+    runtime: node
+    rootDir: ./web
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
-      - key: PORT
-        value: "3000"
-      - key: NODE_ENV
-        value: "production"
+      - key: NEXT_PUBLIC_CATALOG_API_URL
+        value: "ACA_VA_LA_URL_DE_DJANGO" 
 
 databases:
   - name: coupage-db
