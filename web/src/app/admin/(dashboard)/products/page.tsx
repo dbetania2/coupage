@@ -175,6 +175,7 @@ export default function AdminProductsPage() {
 
   // Carga inicial de datos
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCategories();
     loadProducts();
   }, [loadCategories, loadProducts]);

@@ -1,6 +1,11 @@
+'use client';
+import React, { useState } from 'react';
 import Link from 'next/link';
 
-interface ProductCardProps {
+export const FALLBACK_PRODUCT_IMAGE =
+  'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=600&auto=format&fit=crop';
+
+export interface ProductCardProps {
   id: number;
   brand: string;
   name: string;
@@ -11,12 +16,25 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ id, brand, name, price, imageUrl, saleMode, isExclusive }: ProductCardProps) {
+  const [imgSrc, setImgSrc] = useState(imageUrl || FALLBACK_PRODUCT_IMAGE);
+
   return (
     <article className="product-card">
       <Link href={`/product/${id}`}>
         <div className="card-image-wrapper">
           {isExclusive && <span className="badge-exclusive">EXCLUSIVO</span>}
-          <img src={imageUrl} alt={name} className="product-image" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imgSrc}
+            alt={name}
+            className="product-image"
+            onError={() => {
+              if (imgSrc !== FALLBACK_PRODUCT_IMAGE) {
+                setImgSrc(FALLBACK_PRODUCT_IMAGE);
+              }
+            }}
+            loading="lazy"
+          />
         </div>
       </Link>
       

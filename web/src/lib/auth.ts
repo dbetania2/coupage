@@ -85,7 +85,7 @@ export function isAuthenticated(): boolean {
 /**
  * Decodifica el payload de un token JWT
  */
-export function decodeJwtPayload(token: string): Record<string, any> | null {
+export function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const base64Url = token.split('.')[1];
     if (!base64Url) return null;

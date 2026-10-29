@@ -22,6 +22,7 @@ export default function AdminLayout({
     if (!token) {
       router.replace('/admin/login');
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAuthorized(true);
     }
   }, [router]);

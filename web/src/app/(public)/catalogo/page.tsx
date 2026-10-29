@@ -3,6 +3,17 @@ import React, { useState, useEffect } from 'react';
 import ProductGrid from '@/components/ProductGrid';
 import FilterSidebar from '@/components/FilterSidebar';
 
+interface DjangoProduct {
+  id: number;
+  name: string;
+  brand?: { name: string } | null;
+  images: { url: string }[];
+  sale_modes: {
+    type: string;
+    prices: { amount: string | number }[];
+  }[];
+}
+
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -19,7 +30,7 @@ export default function Home() {
       .then(res => res.json())
       .then(data => {
         // Adaptamos el JSON complejo de Django al formato simple de las tarjetas
-        const formattedProducts = data.map((p: any) => ({
+        const formattedProducts = data.map((p: DjangoProduct) => ({
           id: p.id,
           brand: p.brand ? p.brand.name : 'GENÉRICO',
           name: p.name,
