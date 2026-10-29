@@ -17,9 +17,17 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("La variable de entorno SECRET_KEY es requerida en el archivo .env.")
 
+# Modo depuración: False en producción (Render) para ocultar trazas de error sensibles
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+# Seguridad: ALLOWED_HOSTS restringido (evita ataques de Host Header Poisoning)
+raw_allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com')
+ALLOWED_HOSTS = [host.strip() for host in raw_allowed_hosts.split(',') if host.strip()]
+if DEBUG and '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('*')
+
+# Control de exposición: permite encender/apagar Swagger en Render desde variables de entorno
+ENABLE_SWAGGER = os.getenv('ENABLE_SWAGGER', 'True') == 'True'
 
 # Application definition
 INSTALLED_APPS = [
@@ -131,8 +139,27 @@ STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# Orígenes permitidos para CORS: admite Next.js local (puertos 3000/3001) y dominios de producción vía ENV
+raw_cors_origins = os.getenv(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001'
+)
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in raw_cors_origins.split(',') if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
+
+# Cabeceras de seguridad y endurecimiento en producción cuando DEBUG=False
+if not DEBUG:
+    # Confía en el encabezado de proxy SSL provisto por Render (evita bucles infinitos de redirección)
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Protección contra ataques XSS en navegadores heredados
+    SECURE_BROWSER_XSS_FILTER = True
+    # Previene ataques basados en confusión de tipo MIME (MIME-sniffing)
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    # Mitiga Clickjacking impidiendo que la API sea embebida en iframes
+    X_FRAME_OPTIONS = 'DENY'
+    # Redirección obligatoria a HTTPS en producción (configurable por variable de entorno)
+    SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True') == 'True'
+    # Garantiza que cookies de sesión y CSRF sólo se transmitan por canales cifrados (HTTPS)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
