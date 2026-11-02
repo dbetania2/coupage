@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import ProductGrid from '@/components/ProductGrid';
+import { ProductCardProps } from '@/components/ProductCard';
 import FilterSidebar from '@/components/FilterSidebar';
 
 interface DjangoProduct {
@@ -15,37 +16,46 @@ interface DjangoProduct {
 }
 
 export default function Home() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<ProductCardProps[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [ordering, setOrdering] = useState<string>('-id');
 
-  // Efecto que llama a Django cada vez que cambia la categoría seleccionada
+  // Efecto que llama a Django cada vez que cambia la categoría o el orden seleccionado
   useEffect(() => {
     const baseUrl = process.env.NEXT_PUBLIC_CATALOG_API_URL || 'http://127.0.0.1:8000/api';
-    let url = `${baseUrl}/products/`;
+    const params = new URLSearchParams();
     if (selectedCategory) {
-      url += `?category=${selectedCategory}`;
+      params.set('category', selectedCategory);
     }
+    if (ordering) {
+      params.set('ordering', ordering);
+    }
+    const queryString = params.toString();
+    const url = `${baseUrl}/products/${queryString ? `?${queryString}` : ''}`;
 
     fetch(url)
       .then(res => res.json())
       .then(data => {
+        const rawList: DjangoProduct[] = Array.isArray(data) ? data : (data.results || []);
         // Adaptamos el JSON complejo de Django al formato simple de las tarjetas
-        const formattedProducts = data.map((p: DjangoProduct) => ({
+        const formattedProducts = rawList.map((p: DjangoProduct) => ({
           id: p.id,
           brand: p.brand ? p.brand.name : 'GENÉRICO',
           name: p.name,
           // Tomamos el primer precio de la primera modalidad de venta si existe
-          price: p.sale_modes.length > 0 && p.sale_modes[0].prices.length > 0 
+          price: p.sale_modes && p.sale_modes.length > 0 && p.sale_modes[0].prices.length > 0 
             ? `$${p.sale_modes[0].prices[0].amount}` 
             : 'Consultar',
-          saleMode: p.sale_modes.length > 0 ? p.sale_modes[0].type : 'Consultar',
-          imageUrl: p.images.length > 0 ? p.images[0].url : '',
+          saleMode: p.sale_modes && p.sale_modes.length > 0 ? p.sale_modes[0].type : 'Consultar',
+          imageUrl: p.images && p.images.length > 0 ? p.images[0].url : '',
           isExclusive: true // hardcodeado para mantener la estética
         }));
         setProducts(formattedProducts);
+        setTotalCount(typeof data.count === 'number' ? data.count : formattedProducts.length);
       })
       .catch(err => console.error("Error conectando a Django:", err));
-  }, [selectedCategory]);
+  }, [selectedCategory, ordering]);
 
   return (
     <main style={{ padding: '2rem 4rem', maxWidth: '1200px', margin: '0 auto' }}>
@@ -67,8 +77,26 @@ export default function Home() {
         
         <section style={{ flexGrow: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Mostrando <strong style={{color: 'white'}}>{products.length}</strong> joyas seleccionadas</p>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Ordenar por: <strong style={{color: 'white'}}>Relevancia del Atelier ⌄</strong></p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Mostrando <strong style={{color: 'white'}}>{products.length}</strong> de <strong style={{color: 'white'}}>{totalCount}</strong> joyas seleccionadas</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Ordenar por:</span>
+              <select
+                value={ordering}
+                onChange={(e) => setOrdering(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  color: 'white',
+                  border: '1px solid var(--border-color)',
+                  padding: '0.3rem 0.6rem',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="-id" style={{ background: '#111' }}>Más recientes</option>
+                <option value="name" style={{ background: '#111' }}>Nombre (A-Z)</option>
+                <option value="-name" style={{ background: '#111' }}>Nombre (Z-A)</option>
+              </select>
+            </div>
           </div>
           
           {/* Pasamos los productos traídos de la API a la grilla */}

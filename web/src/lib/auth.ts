@@ -102,3 +102,58 @@ export function decodeJwtPayload(token: string): Record<string, unknown> | null 
   }
 }
 
+/**
+ * Solicita un nuevo Access Token usando el Refresh Token (soporta rotación de SimpleJWT)
+ */
+export async function refreshAccessToken(): Promise<string | null> {
+  const refresh = getRefreshToken();
+  if (!refresh) return null;
+
+  try {
+    const baseUrl = (process.env.NEXT_PUBLIC_CATALOG_API_URL || 'http://127.0.0.1:8000/api').replace(/\/+$/, '');
+    const res = await fetch(`${baseUrl}/token/refresh/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh }),
+    });
+    if (!res.ok) {
+      clearAuthTokens();
+      return null;
+    }
+    const data = await res.json();
+    if (data && data.access) {
+      setAuthTokens(data.access, data.refresh || refresh);
+      return data.access;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Invalida el Refresh Token en la Blacklist del backend y limpia el almacenamiento local
+ */
+export async function logoutFromServer(): Promise<void> {
+  const refresh = getRefreshToken();
+  const access = getAccessToken();
+
+  if (refresh) {
+    try {
+      const baseUrl = (process.env.NEXT_PUBLIC_CATALOG_API_URL || 'http://127.0.0.1:8000/api').replace(/\/+$/, '');
+      await fetch(`${baseUrl}/token/logout/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(access ? { Authorization: `Bearer ${access}` } : {}),
+        },
+        body: JSON.stringify({ refresh }),
+      });
+    } catch {
+      // Si el backend no está disponible, igual limpiamos la sesión local
+    }
+  }
+
+  clearAuthTokens();
+}
+

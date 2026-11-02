@@ -1,13 +1,13 @@
 from django.core.management.base import BaseCommand
 from django.db import connection
-from django.db.utils import OperationalError
+from django.db.utils import OperationalError, ProgrammingError
 from django.db.migrations.executor import MigrationExecutor
 from django.conf import settings
 
 class Command(BaseCommand):
     help = 'Verifica la conectividad y el estado de tablas y datos en la base de datos configurada (Local o Render).'
 
-    def handle(self, *args, **options):
+    def handle(self, *args: object, **options: object) -> None:
         db_settings = settings.DATABASES['default']
         host = db_settings.get('HOST') or 'localhost'
         port = db_settings.get('PORT') or '5432'
@@ -42,7 +42,7 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(self.style.WARNING(f" ⚠️  Migraciones: Hay {len(plan)} migraciones pendientes."))
                 self.stdout.write(self.style.WARNING("    💡 Sugerencia: ejecuta 'python manage.py migrate' para crearlas."))
-        except Exception as e:
+        except (OperationalError, ProgrammingError) as e:
             self.stdout.write(self.style.WARNING(f" ⚠️  No se pudo leer el historial de migraciones: {e}"))
 
         # 3. Verificación de Tablas del Dominio

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { getAccessToken, refreshAccessToken } from '@/lib/auth';
 
 interface Category {
   id: number;
@@ -64,23 +65,33 @@ export default function AdminProductsPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Helper para peticiones con JWT (Criterio de Aceptación T13)
+  // Helper para peticiones con JWT y auto-refresh ante expiración de ventana de 15m (T06 / T13)
   const fetchWithAuth = useCallback(async (endpoint: string, options: RequestInit = {}) => {
     const baseUrl = process.env.NEXT_PUBLIC_CATALOG_API_URL || 'http://127.0.0.1:8000/api';
-    const token = typeof window !== 'undefined'
-      ? localStorage.getItem('coupage_access_token') || localStorage.getItem('token') || localStorage.getItem('access_token')
-      : null;
+    const token = getAccessToken();
 
-    const headers: Record<string, string> = {
+    const buildHeaders = (jwt: string | null): Record<string, string> => ({
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {}),
       ...(options.headers as Record<string, string> || {}),
-    };
-
-    return fetch(`${baseUrl}${endpoint}`, {
-      ...options,
-      headers,
     });
+
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      ...options,
+      headers: buildHeaders(token),
+    });
+
+    if (response.status === 401) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        return fetch(`${baseUrl}${endpoint}`, {
+          ...options,
+          headers: buildHeaders(newToken),
+        });
+      }
+    }
+
+    return response;
   }, []);
 
   const loadCategories = useCallback(async () => {
@@ -102,10 +113,11 @@ export default function AdminProductsPage() {
   const loadProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth('/products/');
+      const res = await fetchWithAuth('/products/?page_size=100');
       if (res.ok) {
         const data = await res.json();
-        const formatted: ProductItem[] = data.map((p: RawProductData) => ({
+        const rawList: RawProductData[] = Array.isArray(data) ? data : (data.results || []);
+        const formatted: ProductItem[] = rawList.map((p: RawProductData) => ({
           id: p.id,
           name: p.name,
           description: p.description || '',
@@ -235,52 +247,23 @@ export default function AdminProductsPage() {
     try {
       if (editingProduct) {
         // Modificación (PUT / PATCH)
-        await fetchWithAuth(`/products/${editingProduct.id}/`, {
+        const res = await fetchWithAuth(`/products/${editingProduct.id}/`, {
           method: 'PATCH',
           body: JSON.stringify(payload),
         });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        // Actualizar estado local
-        setProducts(prev => prev.map(p => {
-          if (p.id === editingProduct.id) {
-            const cat = categories.find(c => c.id === Number(formData.categoryId));
-            return {
-              ...p,
-              name: formData.name,
-              description: formData.description,
-              brand: formData.brand ? { id: p.brand?.id || 99, name: formData.brand } : null,
-              category: cat ? { id: cat.id, name: cat.name } : p.category,
-              price: Number(formData.price) || 0,
-              saleMode: formData.saleMode,
-              imageUrl: payload.image_url,
-              isActive: formData.isActive,
-            };
-          }
-          return p;
-        }));
+        await loadProducts();
         showToast(`✅ Producto "${formData.name}" modificado exitosamente.`);
       } else {
         // Alta (POST)
-        await fetchWithAuth('/products/', {
+        const res = await fetchWithAuth('/products/', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        const newId = Date.now();
-        const cat = categories.find(c => c.id === Number(formData.categoryId));
-        const newProduct: ProductItem = {
-          id: newId,
-          name: formData.name,
-          description: formData.description,
-          brand: formData.brand ? { id: 99, name: formData.brand } : null,
-          category: cat ? { id: cat.id, name: cat.name } : null,
-          price: Number(formData.price) || 0,
-          saleMode: formData.saleMode,
-          imageUrl: payload.image_url,
-          isActive: formData.isActive,
-        };
-
-        setProducts(prev => [newProduct, ...prev]);
+        await loadProducts();
         showToast(`🎉 Nuevo producto "${formData.name}" creado con éxito.`);
       }
 
