@@ -35,3 +35,5 @@ yarn-error.log*
 bd.md
 
 /doc/priv
+/doc/djangoteoria
+/doc/node 
