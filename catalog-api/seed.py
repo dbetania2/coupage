@@ -1,107 +1,190 @@
 """
-Script de Seed (Carga de Datos Iniciales) - Cumplimiento de Tarea T03
+Script de Seed (Carga de Datos Iniciales) - Cumplimiento de Tarea T03 (#10)
 
 Justificación de creación:
 De acuerdo al plan de trabajo (Historia de Usuario 1), este script cumple con la Tarea Técnica T03:
 "Carga de Datos Iniciales y Fixtures del Catálogo (Seed Data)".
 
-¿Por qué lo creamos?
-Al desarrollar el frontend (Next.js) y configurar los endpoints de filtrado, los desarrolladores 
-necesitan información realista y completa (fotos, precios, modalidades) para probar que todo funcione 
-correctamente. Este script automatiza la carga de productos de alta calidad para no tener que hacerlo 
-a mano cada vez que se levanta la base de datos desde cero.
+Buenas prácticas aplicadas:
+- Protección de entorno: bloquea la ejecución si DB_MODE='render' para no alterar ni borrar la base real en la nube.
+- Unidad 9.2: Invocación explícita de obj.full_clean() antes de persistir con save() para ejecutar
+  los validadores de campo y el método clean() fuera de DRF/Admin.
 """
 
 import os
-import django
 from datetime import datetime
+from decimal import Decimal
+import django
 from django.utils.timezone import make_aware
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'catalog.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "catalog.settings")
 django.setup()
 
-from products.models import Category, Brand, Product, ProductImage, ProductSaleMode, Price, Stock
+from products.models import (  # noqa: E402
+    Brand,
+    Category,
+    Price,
+    Product,
+    ProductImage,
+    ProductSaleMode,
+    Stock,
+)
+
+
+def _save_validated(instance: django.db.models.Model) -> None:
+    """Ejecuta full_clean() explícitamente antes de guardar en la base de datos."""
+    instance.full_clean()
+    instance.save()
+
 
 def run() -> None:
-    print("Limpiando datos viejos...")
+    db_mode = os.getenv("DB_MODE", "local").strip().lower()
+    is_on_render = bool(os.getenv("RENDER") or os.getenv("RENDER_EXTERNAL_HOSTNAME"))
+    if is_on_render or db_mode == "render":
+        print(
+            "⛔ [PROTECCIÓN] Ejecución cancelada: DB_MODE está apuntando a 'render'. "
+            "No se ejecuta el seed sobre la base de datos real para no borrar ni alterar datos del servidor."
+        )
+        return
+
+    print("Limpiando datos viejos en base local...")
     Product.objects.all().delete()
     Category.objects.all().delete()
     Brand.objects.all().delete()
-    
-    print("Creando Categorías...")
-    cat_vinos = Category.objects.create(name="Vinos", description="Vinos tintos, blancos y rosados de alta gama.")
-    cat_licores = Category.objects.create(name="Licores y Espirituosas", description="Whiskys, gin y licores importados.")
-    cat_deli = Category.objects.create(name="Delicatessen", description="Quesos, embutidos ibéricos y trufas.")
-    
-    print("Creando Marcas...")
-    brand_rutini = Brand.objects.create(name="Rutini Wines")
-    brand_jw = Brand.objects.create(name="Johnnie Walker")
-    brand_catena = Brand.objects.create(name="Catena Zapata")
-    brand_zuccardi = Brand.objects.create(name="Familia Zuccardi")
-    brand_iberico = Brand.objects.create(name="Joselito")
 
-    print("Creando Productos...")
+    print("Creando Categorías...")
+    cat_vinos = Category(name="Vinos", description="Vinos tintos, blancos y rosados de alta gama.")
+    _save_validated(cat_vinos)
+    cat_licores = Category(name="Licores y Espirituosas", description="Whiskys, gin y licores importados.")
+    _save_validated(cat_licores)
+    cat_deli = Category(name="Delicatessen", description="Quesos, embutidos ibéricos y trufas.")
+    _save_validated(cat_deli)
+
+    print("Creando Marcas...")
+    brand_rutini = Brand(name="Rutini Wines")
+    _save_validated(brand_rutini)
+    brand_jw = Brand(name="Johnnie Walker")
+    _save_validated(brand_jw)
+    brand_catena = Brand(name="Catena Zapata")
+    _save_validated(brand_catena)
+    brand_zuccardi = Brand(name="Familia Zuccardi")
+    _save_validated(brand_zuccardi)
+    brand_iberico = Brand(name="Joselito")
+    _save_validated(brand_iberico)
+
+    print("Creando Productos validando con full_clean()...")
     # 1. Rutini (Vino)
-    p1 = Product.objects.create(
-        category=cat_vinos, 
-        brand=brand_rutini, 
+    p1 = Product(
+        category=cat_vinos,
+        brand=brand_rutini,
         name="Rutini Cabernet Malbec",
-        description="Un vino tinto elegante, con notas de frutos rojos maduros, vainilla y un final persistente en boca. Su crianza en barrica de roble francés le otorga una estructura inigualable. Ideal para acompañar carnes rojas y pastas trufadas."
+        description=(
+            "Un vino tinto elegante, con notas de frutos rojos maduros, vainilla y un final persistente en boca. "
+            "Su crianza en barrica de roble francés le otorga una estructura inigualable. "
+            "Ideal para acompañar carnes rojas y pastas trufadas."
+        ),
     )
-    ProductImage.objects.create(product=p1, url="http://localhost:8000/media/malbec.png", is_primary=True)
-    sm1 = ProductSaleMode.objects.create(product=p1, type="Unidad", units_per_package=1)
-    Price.objects.create(sale_mode=sm1, amount=12500.00, valid_from=make_aware(datetime.now()))
-    Stock.objects.create(sale_mode=sm1, quantity=50)
+    _save_validated(p1)
+    _save_validated(ProductImage(product=p1, url="http://localhost:8000/media/malbec.png", is_primary=True))
+    sm1 = ProductSaleMode(product=p1, type="Unidad", units_per_package=1)
+    _save_validated(sm1)
+    _save_validated(Price(sale_mode=sm1, amount=Decimal("12500.00"), valid_from=make_aware(datetime.now())))
+    _save_validated(Stock(sale_mode=sm1, quantity=50))
 
     # 2. Catena Zapata (Vino)
-    p2 = Product.objects.create(
-        category=cat_vinos, 
-        brand=brand_catena, 
+    p2 = Product(
+        category=cat_vinos,
+        brand=brand_catena,
         name="Catena Zapata Malbec Argentino",
-        description="Una verdadera joya de la vitivinicultura argentina. Blend de uvas provenientes de dos viñedos históricos. Ofrece aromas intensos a cassis y moca, con una textura aterciopelada y taninos dulces."
+        description=(
+            "Una verdadera joya de la vitivinicultura argentina. Blend de uvas provenientes de dos viñedos históricos. "
+            "Ofrece aromas intensos a cassis y moca, con una textura aterciopelada y taninos dulces."
+        ),
     )
-    ProductImage.objects.create(product=p2, url="https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=1080&auto=format&fit=crop", is_primary=True)
-    sm2 = ProductSaleMode.objects.create(product=p2, type="Unidad", units_per_package=1)
-    Price.objects.create(sale_mode=sm2, amount=115000.00, valid_from=make_aware(datetime.now()))
-    Stock.objects.create(sale_mode=sm2, quantity=15)
+    _save_validated(p2)
+    _save_validated(
+        ProductImage(
+            product=p2,
+            url="https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=1080&auto=format&fit=crop",
+            is_primary=True,
+        )
+    )
+    sm2 = ProductSaleMode(product=p2, type="Unidad", units_per_package=1)
+    _save_validated(sm2)
+    _save_validated(Price(sale_mode=sm2, amount=Decimal("115000.00"), valid_from=make_aware(datetime.now())))
+    _save_validated(Stock(sale_mode=sm2, quantity=15))
 
     # 3. Zuccardi (Vino)
-    p3 = Product.objects.create(
-        category=cat_vinos, 
-        brand=brand_zuccardi, 
+    p3 = Product(
+        category=cat_vinos,
+        brand=brand_zuccardi,
         name="Zuccardi Aluvional Gualtallary",
-        description="La máxima expresión del Valle de Uco. Un Malbec profundo, con marcada mineralidad, notas de tiza y frutas negras. Posee una acidez vibrante que le augura una excelente capacidad de guarda."
+        description=(
+            "La máxima expresión del Valle de Uco. Un Malbec profundo, con marcada mineralidad, notas de tiza y frutas negras. "
+            "Posee una acidez vibrante que le augura una excelente capacidad de guarda."
+        ),
     )
-    ProductImage.objects.create(product=p3, url="https://images.unsplash.com/photo-1569529465841-dfecdab7503b?q=80&w=1080&auto=format&fit=crop", is_primary=True)
-    sm3 = ProductSaleMode.objects.create(product=p3, type="Unidad", units_per_package=1)
-    Price.objects.create(sale_mode=sm3, amount=145000.00, valid_from=make_aware(datetime.now()))
-    Stock.objects.create(sale_mode=sm3, quantity=8)
+    _save_validated(p3)
+    _save_validated(
+        ProductImage(
+            product=p3,
+            url="https://images.unsplash.com/photo-1569529465841-dfecdab7503b?q=80&w=1080&auto=format&fit=crop",
+            is_primary=True,
+        )
+    )
+    sm3 = ProductSaleMode(product=p3, type="Unidad", units_per_package=1)
+    _save_validated(sm3)
+    _save_validated(Price(sale_mode=sm3, amount=Decimal("145000.00"), valid_from=make_aware(datetime.now())))
+    _save_validated(Stock(sale_mode=sm3, quantity=8))
 
     # 4. Johnnie Walker (Licores)
-    p4 = Product.objects.create(
-        category=cat_licores, 
-        brand=brand_jw, 
+    p4 = Product(
+        category=cat_licores,
+        brand=brand_jw,
         name="Johnnie Walker Blue Label",
-        description="Blend escocés extraordinario y exclusivo, creado con algunos de los whiskies más raros y excepcionales de Escocia. Un regalo inigualable con notas de miel, avellanas y un toque de humo sutil."
+        description=(
+            "Blend escocés extraordinario y exclusivo, creado con algunos de los whiskies más raros y excepcionales de Escocia. "
+            "Un regalo inigualable con notas de miel, avellanas y un toque de humo sutil."
+        ),
     )
-    ProductImage.objects.create(product=p4, url="https://images.unsplash.com/photo-1527661591475-527312dd65f5?q=80&w=1080&auto=format&fit=crop", is_primary=True)
-    sm4 = ProductSaleMode.objects.create(product=p4, type="Unidad", units_per_package=1)
-    Price.objects.create(sale_mode=sm4, amount=350000.00, valid_from=make_aware(datetime.now()))
-    Stock.objects.create(sale_mode=sm4, quantity=5)
+    _save_validated(p4)
+    _save_validated(
+        ProductImage(
+            product=p4,
+            url="https://images.unsplash.com/photo-1527661591475-527312dd65f5?q=80&w=1080&auto=format&fit=crop",
+            is_primary=True,
+        )
+    )
+    sm4 = ProductSaleMode(product=p4, type="Unidad", units_per_package=1)
+    _save_validated(sm4)
+    _save_validated(Price(sale_mode=sm4, amount=Decimal("350000.00"), valid_from=make_aware(datetime.now())))
+    _save_validated(Stock(sale_mode=sm4, quantity=5))
 
     # 5. Queso Ibérico (Delicatessen)
-    p5 = Product.objects.create(
-        category=cat_deli, 
-        brand=brand_iberico, 
+    p5 = Product(
+        category=cat_deli,
+        brand=brand_iberico,
         name="Queso Manchego Curado Añejo",
-        description="Auténtico queso manchego de leche cruda de oveja, con una maduración superior a 12 meses. Sabor intenso, ligeramente picante y textura firme. El acompañamiento perfecto para un gran reserva."
+        description=(
+            "Auténtico queso manchego de leche cruda de oveja, con una maduración superior a 12 meses. "
+            "Sabor intenso, ligeramente picante y textura firme. El acompañamiento perfecto para un gran reserva."
+        ),
     )
-    ProductImage.objects.create(product=p5, url="https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?q=80&w=1080&auto=format&fit=crop", is_primary=True)
-    sm5 = ProductSaleMode.objects.create(product=p5, type="Porción 250g", units_per_package=1)
-    Price.objects.create(sale_mode=sm5, amount=25000.00, valid_from=make_aware(datetime.now()))
-    Stock.objects.create(sale_mode=sm5, quantity=20)
+    _save_validated(p5)
+    _save_validated(
+        ProductImage(
+            product=p5,
+            url="https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?q=80&w=1080&auto=format&fit=crop",
+            is_primary=True,
+        )
+    )
+    sm5 = ProductSaleMode(product=p5, type="Porción 250g", units_per_package=1)
+    _save_validated(sm5)
+    _save_validated(Price(sale_mode=sm5, amount=Decimal("25000.00"), valid_from=make_aware(datetime.now())))
+    _save_validated(Stock(sale_mode=sm5, quantity=20))
 
-    print("¡Datos cargados exitosamente!")
+    print("¡Datos cargados y validados exitosamente!")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run()
