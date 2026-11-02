@@ -14,7 +14,7 @@ class Category(models.Model):
     class Meta:
         verbose_name_plural = 'Categories'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 class Brand(models.Model):
@@ -28,7 +28,7 @@ class Brand(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 class Product(models.Model):
@@ -44,7 +44,7 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 class ProductImage(models.Model):
@@ -58,7 +58,7 @@ class ProductImage(models.Model):
     display_order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Image for {self.product.name}"
 
 class ProductSaleMode(models.Model):
@@ -73,7 +73,7 @@ class ProductSaleMode(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.product.name} - {self.type}"
 
 class Price(models.Model):
@@ -88,7 +88,7 @@ class Price(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.sale_mode} - ${self.amount}"
 
 class Stock(models.Model):
@@ -100,7 +100,7 @@ class Stock(models.Model):
     quantity = models.IntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.sale_mode} - Stock: {self.quantity}"
 
 class Promotion(models.Model):
@@ -119,5 +119,5 @@ class Promotion(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name

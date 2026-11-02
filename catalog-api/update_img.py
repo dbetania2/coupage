@@ -16,7 +16,7 @@ django.setup()
 
 from products.models import Product, ProductImage
 
-def update_image():
+def update_image() -> None:
     # Buscamos el vino Rutini que creamos antes
     rutini = Product.objects.filter(name="Rutini Cabernet Malbec").first()
     if rutini:

@@ -22,7 +22,7 @@ django.setup()
 
 from products.models import Category, Brand, Product, ProductImage, ProductSaleMode, Price, Stock
 
-def run():
+def run() -> None:
     print("Limpiando datos viejos...")
     Product.objects.all().delete()
     Category.objects.all().delete()

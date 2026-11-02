@@ -1,5 +1,6 @@
+from django.db.models import QuerySet
 from rest_framework import viewsets
-from rest_framework.permissions import AllowAny, IsAdminUser, SAFE_METHODS
+from rest_framework.permissions import AllowAny, BasePermission, IsAdminUser, SAFE_METHODS
 from .models import Product, Category
 from .serializers import ProductSerializer, CategorySerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -15,12 +16,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
     """
     serializer_class = CategorySerializer
 
-    def get_permissions(self):
+    def get_permissions(self) -> list[BasePermission]:
         if self.request.method in SAFE_METHODS:
             return [AllowAny()]
         return [IsAdminUser()]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Category]:
         if self.request.user and self.request.user.is_staff:
             return Category.objects.all()
         return Category.objects.filter(is_active=True)
@@ -37,7 +38,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     """
     serializer_class = ProductSerializer
 
-    def get_permissions(self):
+    def get_permissions(self) -> list[BasePermission]:
         if self.request.method in SAFE_METHODS:
             return [AllowAny()]
         return [IsAdminUser()]
@@ -47,7 +48,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             OpenApiParameter(name='category', description='Filtra los productos por el nombre de la categoría (ej: Vinos)', type=str, required=False),
         ]
     )
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Product]:
         queryset = Product.objects.all().prefetch_related(
             'images', 'sale_modes__prices', 'sale_modes__stock', 'category', 'brand'
         )
