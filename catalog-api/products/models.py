@@ -1,3 +1,6 @@
+from decimal import Decimal
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 
 class Category(models.Model):
@@ -68,10 +71,20 @@ class ProductSaleMode(models.Model):
     """
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='sale_modes')
     type = models.CharField(max_length=20)
-    units_per_package = models.IntegerField(null=True, blank=True)
+    units_per_package = models.IntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def current_price(self) -> Decimal | None:
+        """Retorna el monto del precio activo más reciente de la modalidad."""
+        active_price = self.prices.filter(is_active=True).order_by('-valid_from').first()
+        return active_price.amount if active_price else None
 
     def __str__(self) -> str:
         return f"{self.product.name} - {self.type}"
@@ -82,11 +95,22 @@ class Price(models.Model):
     un historial de precios (valid_from / valid_until) y mostrar siempre el "precio actualizado".
     """
     sale_mode = models.ForeignKey(ProductSaleMode, on_delete=models.CASCADE, related_name='prices')
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
     valid_from = models.DateTimeField()
     valid_until = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self) -> None:
+        """Validación cruzada: el inicio de vigencia debe ser anterior al fin de vigencia."""
+        if self.valid_from and self.valid_until and self.valid_from >= self.valid_until:
+            raise ValidationError(
+                "Regla de negocio violada: La fecha 'valid_from' debe ser estrictamente anterior a 'valid_until'."
+            )
 
     def __str__(self) -> str:
         return f"{self.sale_mode} - ${self.amount}"
@@ -97,8 +121,16 @@ class Stock(models.Model):
     la "disponibilidad real" de los productos al revisar las solicitudes de pedidos.
     """
     sale_mode = models.OneToOneField(ProductSaleMode, on_delete=models.CASCADE, related_name='stock')
-    quantity = models.IntegerField(default=0)
+    quantity = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def is_available(self) -> bool:
+        """Indica si existen unidades disponibles en inventario."""
+        return self.quantity > 0
 
     def __str__(self) -> str:
         return f"{self.sale_mode} - Stock: {self.quantity}"
@@ -108,16 +140,40 @@ class Promotion(models.Model):
     Modelo de Promoción: Permite aplicar descuentos temporales a productos específicos, 
     atrayendo clientes en el catálogo público.
     """
+    DISCOUNT_TYPE_CHOICES = [
+        ('PERCENTAGE', 'Porcentaje'),
+        ('FIXED', 'Monto Fijo'),
+    ]
+
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True, null=True)
-    discount_type = models.CharField(max_length=20)
-    discount_value = models.DecimalField(max_digits=12, decimal_places=2)
+    discount_type = models.CharField(
+        max_length=20,
+        choices=DISCOUNT_TYPE_CHOICES,
+        default='PERCENTAGE',
+    )
+    discount_value = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField()
     is_active = models.BooleanField(default=True)
     products = models.ManyToManyField(Product, related_name='promotions', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self) -> None:
+        """Validación cruzada de fechas y tope porcentual de la promoción."""
+        if self.starts_at and self.ends_at and self.starts_at >= self.ends_at:
+            raise ValidationError(
+                "Regla de negocio violada: La fecha 'starts_at' debe ser estrictamente anterior a 'ends_at'."
+            )
+        if self.discount_type == 'PERCENTAGE' and self.discount_value is not None and self.discount_value > Decimal('100.00'):
+            raise ValidationError(
+                "Regla de negocio violada: Un descuento porcentual no puede superar el 100%."
+            )
 
     def __str__(self) -> str:
         return self.name
