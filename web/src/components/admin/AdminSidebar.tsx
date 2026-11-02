@@ -2,7 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { clearAuthTokens } from '@/lib/auth';
+import { logoutFromServer } from '@/lib/auth';
 
 interface NavItem {
   label: string;
@@ -82,9 +82,9 @@ export default function AdminSidebar() {
     },
   ];
 
-  const handleLogout = () => {
-    // Elimina tokens de sesión y redirige al inicio o login
-    clearAuthTokens();
+  const handleLogout = async () => {
+    // Invalida el refresh token en la Blacklist de Django y limpia la sesión local
+    await logoutFromServer();
     if (typeof window !== 'undefined') {
       sessionStorage.clear();
     }
