@@ -12,21 +12,30 @@ export default function SiteHeader() {
   return (
     <header className={styles.header}>
       <Container size="default" className={styles.container}>
-        {/* Navegación izquierda */}
-        <nav className={styles.navLeft} aria-label="Navegación principal">
+        {/* Logotipo e identidad a la izquierda */}
+        <div className={styles.brandWrapper}>
+          <Link href="/" className={styles.brandLink}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/brand/tgg.png"
+              alt="Tu Gusto Gourmet Logo"
+              className={styles.brandLogo}
+            />
+            <div className={styles.brandTextGroup}>
+              <span className={styles.brandTitle}>TU GUSTO GOURMET</span>
+              <span className={styles.brandSubtitle}>BODEGA &amp; DELICATESSEN</span>
+            </div>
+          </Link>
+        </div>
+
+        {/* Navegación centrada */}
+        <nav className={styles.navCenter} aria-label="Navegación principal">
           <Link href="/" className={styles.navLink}>Inicio</Link>
           <Link href="/catalogo" className={styles.navLink}>Catálogo</Link>
           <Link href="#colecciones" className={styles.navLink}>Colecciones</Link>
           <Link href="#bodega" className={styles.navLink}>Bodega de Autor</Link>
           <Link href="#atelier" className={styles.navLink}>Atelier</Link>
         </nav>
-
-        {/* Logotipo centrado */}
-        <div className={styles.brandWrapper}>
-          <Link href="/" className={styles.brandLink}>
-            <span className={styles.brandTitle}>TU GUSTO GOURMET</span>
-          </Link>
-        </div>
 
         {/* Acciones derecha */}
         <div className={styles.actionsRight}>

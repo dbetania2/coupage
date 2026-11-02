@@ -51,7 +51,20 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        {/* Marca de agua tipográfica gigante de la referencia "TU GUSTO" */}
+        {/* Sello / Emblema central y marca de agua tipográfica */}
+        <div className={styles.emblemDivider}>
+          <span className={styles.dividerLine} />
+          <Link href="/" className={styles.footerLogoLink} aria-label="Volver al inicio">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/brand/tgg.png"
+              alt="Sello Tu Gusto Gourmet"
+              className={styles.footerLogo}
+            />
+          </Link>
+          <span className={styles.dividerLine} />
+        </div>
+
         <div className={styles.watermarkWrapper}>
           <span className={styles.watermark}>TU GUSTO</span>
         </div>

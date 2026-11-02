@@ -71,12 +71,53 @@
   color: var(--color-gold);
 }
 
-/* Marca de agua gigante con opacidad muy baja */
+/* Sello dorado central y marca de agua gigante */
+.emblemDivider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding-top: 2.75rem;
+  position: relative;
+  z-index: 2;
+}
+
+.dividerLine {
+  flex: 1;
+  max-width: 220px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(212, 175, 55, 0.45),
+    transparent
+  );
+}
+
+.footerLogoLink {
+  display: inline-flex;
+  border-radius: 50%;
+  transition: transform 0.35s ease;
+}
+
+.footerLogoLink:hover {
+  transform: scale(1.05);
+}
+
+.footerLogo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.75);
+}
+
 .watermarkWrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 3rem 0 1.5rem;
+  padding: 1.25rem 0 1.5rem;
   user-select: none;
   pointer-events: none;
 }
