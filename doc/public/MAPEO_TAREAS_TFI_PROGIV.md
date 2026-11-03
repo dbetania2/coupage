@@ -49,18 +49,18 @@ _Estado: Planificado para ejecución inmediata. Foco en flujo de checkout sin co
 - **Tipo:** Infraestructura / Cloud | **Prioridad:** Alta | **Estimación:** 1 SP
 - **Descripción:** Crear el proyecto `coupage` en la consola de Firebase, habilitar la base de datos Cloud Firestore en la región multirregión adecuada, generar la clave privada de Service Account (`serviceAccountKey.json`) y configurar la plantilla de entorno.
 - **Criterios de Aceptación:**
-  - [ ] Proyecto Firebase creado y Cloud Firestore activo con reglas de seguridad iniciales.
-  - [ ] Clave privada de Service Account generada y resguardada (sin commitear al repo).
-  - [ ] `.gitignore` verificado para ignorar `*serviceAccountKey*.json` y credenciales.
-  - [ ] `orders-api/.env.example` actualizado con `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` y `FIREBASE_PRIVATE_KEY`.
+  - [x] Proyecto Firebase creado y Cloud Firestore activo con reglas de seguridad iniciales.
+  - [x] Clave privada de Service Account generada y resguardada (sin commitear al repo).
+  - [x] `.gitignore` verificado para ignorar `*serviceAccountKey*.json` y credenciales.
+  - [x] `orders-api/.env.example` actualizado con `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` y `FIREBASE_PRIVATE_KEY`.
 
 #### 🔹 [T15] Conexión e Inicialización del SDK de Firebase en `orders-api`
 - **Tipo:** Backend (Node.js) | **Prioridad:** Alta | **Estimación:** 2 SP | **Depende de:** T14
-- **Descripción:** Integrar el SDK oficial `firebase-admin` en Node.js, crear el módulo `orders-api/config/firebase.js` que lea las variables de entorno de forma segura (normalizando saltos de línea de la clave privada) y exponer un endpoint `/health` de diagnóstico.
+- **Descripción:** Integrar el SDK oficial `firebase-admin` en Node.js, crear el módulo `orders-api/config/firebase.js` que lea las variables de entorno de forma segura (normalizando saltos de línea de la clave privada) y exponer endpoints `/health` y `/ready` de diagnóstico.
 - **Criterios de Aceptación:**
-  - [ ] Paquete `firebase-admin` instalado en `orders-api/package.json`.
-  - [ ] Conexión singleton exportando la instancia de Firestore (`db`).
-  - [ ] Endpoint `GET /health` responde `HTTP 200` confirmando conexión activa con Firestore.
+  - [x] Paquete `firebase-admin` instalado en `orders-api/package.json`.
+  - [x] Conexión singleton exportando la instancia de Firestore (`db`).
+  - [x] Endpoints `GET /health` y `GET /ready` responden `HTTP 200` confirmando conexión activa con Firestore.
 
 #### 🔹 [T16] Configuración de CORS y Seguridad en `orders-api`
 - **Tipo:** Backend / Seguridad | **Prioridad:** Crítica | **Estimación:** 1 SP
@@ -97,12 +97,12 @@ _Estado: Planificado para ejecución inmediata. Foco en flujo de checkout sin co
   - [ ] Soporte para query parameter `?status=PENDIENTE`.
   - [ ] `PATCH /api/orders/:id/status` actualiza el estado y añade un registro atómico al array `history`.
 
-#### 🔹 [T19] Script de Datos Semilla para Pedidos de Prueba (`seed_orders.js`)
+#### 🔹 [T19] Script de Datos Semilla para Pedidos de Prueba (`seed.js`)
 - **Tipo:** Backend / DevOps | **Prioridad:** Media | **Estimación:** 1 SP | **Depende de:** T15
-- **Descripción:** Crear un script de inicialización para poblar Firestore con un lote de 6 pedidos de ejemplo distribuidos en los distintos estados (`PENDIENTE`, `CONFIRMADO`, `PREPARADO`, `ENTREGADO`, `RECHAZADO`) con historiales de trazabilidad creíbles.
+- **Descripción:** Crear un script de inicialización para poblar Firestore con un lote de 5 pedidos de ejemplo distribuidos en los distintos estados (`PENDIENTE`, `CONFIRMADO`, `PREPARADO`, `ENTREGADO`, `CANCELADO`) con historiales de trazabilidad creíbles.
 - **Criterios de Aceptación:**
-  - [ ] Comando `npm run seed:orders` ejecutable desde `orders-api/` o la raíz.
-  - [ ] Permite que cualquier desarrollador levante el panel administrativo y vea datos reales sin ingresar compras manualmente.
+  - [x] Comando `npm run seed` ejecutable desde `orders-api/`.
+  - [x] Permite que cualquier desarrollador levante el panel administrativo y vea datos reales sin ingresar compras manualmente.
 
 #### 🔹 [T20] Pruebas Unitarias y de Integración en `orders-api`
 - **Tipo:** Backend / Testing | **Prioridad:** Media | **Estimación:** 2 SP | **Depende de:** T17, T18

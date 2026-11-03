@@ -7,6 +7,8 @@ const swaggerJsdoc = require('swagger-jsdoc');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+const { db } = require('./config/firebase');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -53,6 +55,42 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     swagger_docs: `http://127.0.0.1:${PORT}/api-docs`
   });
+});
+
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     summary: Liveness Probe
+ *     description: Chequeo simple de vida del proceso Node.js.
+ *     responses:
+ *       200:
+ *         description: Event loop activo.
+ */
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime() });
+});
+
+/**
+ * @openapi
+ * /ready:
+ *   get:
+ *     summary: Readiness Probe
+ *     description: Verifica conectividad real con Firestore.
+ *     responses:
+ *       200:
+ *         description: Dependencias conectadas y listas.
+ *       503:
+ *         description: Falla en la conexión a la base de datos.
+ */
+app.get('/ready', async (req, res) => {
+  try {
+    // Chequeo ligero a Firestore para comprobar credenciales
+    await db.collection('orders').limit(1).get();
+    res.json({ status: 'ready', firestore: 'connected' });
+  } catch (error) {
+    res.status(503).json({ status: 'error', firestore: 'disconnected', message: error.message });
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
