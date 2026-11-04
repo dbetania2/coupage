@@ -201,6 +201,18 @@ async function seedDatabase() {
     ];
 
     for (const order of orders) {
+      // Revisa si ya existe para no duplicar
+      const snapshot = await db.collection('orders')
+        .where('orderNumber', '==', order.orderNumber)
+        .limit(1)
+        .get();
+
+      if (!snapshot.empty) {
+        console.log(`ℹ️ [${order.status}] Pedido ${order.orderNumber} ya existe -> ID: ${snapshot.docs[0].id}`);
+        continue;
+      }
+
+      // Inserta con ID aleatorio de Firebase
       const docRef = await db.collection('orders').add(order);
       console.log(`✅ [${order.status}] Pedido ${order.orderNumber} cargado -> ID: ${docRef.id}`);
     }

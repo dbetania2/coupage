@@ -4,6 +4,8 @@ import path from 'path';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import corsMiddleware from './infra/http/middlewares/cors.js';
+import errorMiddleware from './infra/http/middlewares/errorMiddleware.js';
+import { orderRouter } from './composicion.js';
 import { db } from './config/firebase.js';
 
 dotenv.config({ path: path.join(import.meta.dirname, '..', '.env') });
@@ -89,6 +91,12 @@ app.get('/ready', async (req, res) => {
     res.status(503).json({ status: 'error', firestore: 'disconnected', message: error.message });
   }
 });
+
+// Rutas de la API de pedidos
+app.use('/api/orders', orderRouter);
+
+// Middleware centralizado de errores (debe ir siempre al final de todas las rutas)
+app.use(errorMiddleware);
 
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Orders API corriendo exitosamente en http://127.0.0.1:${PORT}`);

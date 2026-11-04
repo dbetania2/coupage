@@ -1,0 +1,11 @@
+- Pasamos el microservicio de Node a módulos ESM agregando type module en el package.json y redactamos la justificación técnica en el ADR 01.
+- Migramos todos los archivos existentes que estaban en CommonJS reemplazando require y module.exports por la sintaxis moderna de import y export.
+- Configuramos el middleware de CORS de forma dinámica con variables de entorno para aceptar peticiones tanto de localhost en local como de la URL del servidor en producción.
+- Corregimos el error de inicialización del SDK de Firebase Admin adaptando la lectura de credenciales y aplicaciones activas a su versión moderna.
+- Diseñamos la arquitectura hexagonal separando el código en dominio, aplicación e infraestructura para que las reglas de negocio no dependan de Express ni de Firestore.
+- Programamos la entidad de dominio del pedido con sus reglas de cálculo, snapshot de precios y la máquina de estados.
+- Detectamos y solucionamos el error de duplicación en el script de seed agregando una consulta previa para conservar los IDs aleatorios creados por Firebase.
+- Ejecutamos la limpieza en la base de datos de Firestore borrando los registros duplicados y dejando los cinco pedidos de prueba originales.
+- Implementamos clases de error personalizadas y un middleware global que captura fallos, genera un código x-correlation-id para rastreo en logs y oculta detalles internos por seguridad.
+- Construimos el esquema de validación con Joi para asegurar que los datos del comprador y los productos lleguen completos antes de procesar cualquier compra.
+- Dejamos listos y testeados los endpoints GET para listar compras en el panel administrativo y POST para registrar nuevos pedidos con recálculo seguro de totales en el backend.
