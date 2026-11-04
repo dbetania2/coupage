@@ -34,6 +34,6 @@ yarn-error.log*
 /context
 bd.md
 
-/doc/priv
-/doc/djangoteoria
-/doc/node 
+/docs/priv
+/docs/djangoteoria
+/docs/node 
