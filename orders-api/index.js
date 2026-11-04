@@ -1,18 +1,17 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const path = require('path');
-const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
+import express from 'express';
+import dotenv from 'dotenv';
+import path from 'path';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
+import corsMiddleware from './middlewares/cors.js';
+import { db } from './config/firebase.js';
 
-dotenv.config({ path: path.join(__dirname, '.env') });
-
-const { db } = require('./config/firebase');
+dotenv.config({ path: path.join(import.meta.dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(corsMiddleware);
 app.use(express.json());
 
 // Configuración de Swagger / OpenAPI

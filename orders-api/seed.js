@@ -1,4 +1,4 @@
-const { db, admin } = require('./config/firebase');
+import { db, admin } from './config/firebase.js';
 
 async function seedDatabase() {
   console.log('🌱 Inicializando colección "orders" con 5 pedidos de prueba en Firebase Firestore...\n');

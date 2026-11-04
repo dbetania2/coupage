@@ -1,10 +1,10 @@
-const admin = require('firebase-admin');
-const { getFirestore } = require('firebase-admin/firestore');
-const path = require('path');
-const dotenv = require('dotenv');
+import admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
+import path from 'path';
+import dotenv from 'dotenv';
 
 // Asegurar carga de variables de entorno si se importa de forma aislada
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(import.meta.dirname, '..', '.env') });
 
 if (!admin.getApps().length) {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY
@@ -22,4 +22,4 @@ if (!admin.getApps().length) {
 
 const db = getFirestore();
 
-module.exports = { admin, db };
+export { admin, db };
