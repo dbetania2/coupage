@@ -3,8 +3,8 @@ import { getFirestore } from 'firebase-admin/firestore';
 import path from 'path';
 import dotenv from 'dotenv';
 
-// Asegurar carga de variables de entorno si se importa de forma aislada
-dotenv.config({ path: path.join(import.meta.dirname, '..', '.env') });
+// Cargar variables desde orders-api/.env
+dotenv.config({ path: path.join(import.meta.dirname, '..', '..', '.env') });
 
 if (!admin.getApps().length) {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY
@@ -23,3 +23,4 @@ if (!admin.getApps().length) {
 const db = getFirestore();
 
 export { admin, db };
+
