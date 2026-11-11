@@ -42,10 +42,10 @@ export default function SiteFooter() {
             <div className={styles.linkColumn}>
               <h4 className={styles.columnTitle}>LA MAISON</h4>
               <ul className={styles.linkList}>
-                <li><Link href="#historia">Nuestra Historia</Link></li>
-                <li><Link href="#servicios">Atelier & Cavas</Link></li>
-                <li><Link href="/contacto">Servicio al Cliente</Link></li>
-                <li><Link href="/contacto">Contacto Privado</Link></li>
+                <li><Link href="/#historia">Nuestra Historia</Link></li>
+                <li><Link href="/catalogo">Catálogo Completo</Link></li>
+                <li><Link href="/seguimiento">Seguimiento de Pedido</Link></li>
+                <li><Link href="/admin/login">Acceso Personal / Admin</Link></li>
               </ul>
             </div>
           </div>
