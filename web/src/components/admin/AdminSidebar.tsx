@@ -1,10 +1,11 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { logoutFromServer } from '@/lib/auth';
 
 interface NavItem {
+  id: string;
   label: string;
   href: string;
   icon: React.ReactNode;
@@ -13,9 +14,12 @@ interface NavItem {
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
+  // Ley de Hick: Máximo 7 ítems principales en la barra de navegación
   const navItems: NavItem[] = [
     {
+      id: 'nav-dashboard',
       label: 'Escritorio',
       href: '/admin',
       icon: (
@@ -26,7 +30,8 @@ export default function AdminSidebar() {
       ),
     },
     {
-      label: 'Pedidos',
+      id: 'nav-orders',
+      label: 'Pedidos (Node)',
       href: '/admin/orders',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -37,6 +42,30 @@ export default function AdminSidebar() {
       ),
     },
     {
+      id: 'nav-products',
+      label: 'Inventario (Django)',
+      href: '/admin/products',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="21 8 21 21 3 21 3 8"></polyline>
+          <rect x="1" y="3" width="22" height="5"></rect>
+          <line x1="10" y1="12" x2="14" y2="12"></line>
+        </svg>
+      ),
+    },
+    {
+      id: 'nav-assistant',
+      label: 'Asistente IA',
+      href: '/admin/assistant',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"></path>
+          <path d="M16 14H8a4 4 0 0 0-4 4v2h16v-2a4 4 0 0 0-4-4z"></path>
+        </svg>
+      ),
+    },
+    {
+      id: 'nav-customers',
       label: 'Clientes',
       href: '/admin/customers',
       icon: (
@@ -49,17 +78,7 @@ export default function AdminSidebar() {
       ),
     },
     {
-      label: 'Inventario',
-      href: '/admin/products',
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="21 8 21 21 3 21 3 8"></polyline>
-          <rect x="1" y="3" width="22" height="5"></rect>
-          <line x1="10" y1="12" x2="14" y2="12"></line>
-        </svg>
-      ),
-    },
-    {
+      id: 'nav-reports',
       label: 'Reportes',
       href: '/admin/reports',
       icon: (
@@ -71,6 +90,7 @@ export default function AdminSidebar() {
       ),
     },
     {
+      id: 'nav-settings',
       label: 'Configuración',
       href: '/admin/settings',
       icon: (
@@ -83,7 +103,6 @@ export default function AdminSidebar() {
   ];
 
   const handleLogout = async () => {
-    // Invalida el refresh token en la Blacklist de Django y limpia la sesión local
     await logoutFromServer();
     if (typeof window !== 'undefined') {
       sessionStorage.clear();
@@ -92,55 +111,113 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside className="admin-sidebar">
-      {/* Brand Header */}
+    <aside className={`admin-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+      {/* Brand Header con Logo de Tu Gusto Gourmet + Botón de Colapsar/Expandir integrado en el flujo */}
       <div className="admin-brand">
-        <div className="admin-brand-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-            <polyline points="2 17 12 22 22 17"></polyline>
-            <polyline points="2 12 12 17 22 12"></polyline>
+        {!isCollapsed && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flex: 1 }}>
+            <div className="admin-brand-icon">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/brand/tgg.png"
+                alt="Tu Gusto Gourmet Logo"
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+            </div>
+            <div className="admin-brand-text">
+              <span className="brand-title">Tu Gusto Gourmet</span>
+              <span className="brand-subtitle">PANEL DE GESTIÓN</span>
+            </div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setIsCollapsed((prev) => !prev)}
+          className="admin-sidebar-toggle-btn"
+          title={isCollapsed ? 'Expandir panel lateral' : 'Contraer panel lateral'}
+          aria-label={isCollapsed ? 'Expandir panel lateral' : 'Contraer panel lateral'}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="9" y1="3" x2="9" y2="21"></line>
+            {isCollapsed ? (
+              <polyline points="13 9 16 12 13 15"></polyline>
+            ) : (
+              <polyline points="16 15 13 12 16 9"></polyline>
+            )}
           </svg>
-        </div>
-        <div className="admin-brand-text">
-          <span className="brand-title">VistaAdmin</span>
-          <span className="brand-subtitle">GESTIÓN DE ENVÍOS</span>
-        </div>
+        </button>
       </div>
 
-      {/* Navigation List */}
-      <nav className="admin-nav">
+      {/* Navigation List (Keys únicas y estables por item.id) */}
+      <nav className="admin-nav" aria-label="Menú administrativo">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
           return (
             <Link
-              key={item.href}
+              key={item.id}
               href={item.href}
+              title={isCollapsed ? item.label : undefined}
               className={`admin-nav-item ${isActive ? 'active' : ''}`}
+              style={{
+                minHeight: '44px',
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
+                padding: isCollapsed ? '0.7rem' : '0.7rem 0.9rem',
+              }}
             >
               <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
+              {!isCollapsed && <span className="nav-label">{item.label}</span>}
             </Link>
           );
         })}
       </nav>
 
+      {/* Enlace directo a la Web Pública */}
+      <div style={{ marginBottom: '1rem', padding: '0 0.25rem' }}>
+        <Link
+          href="/"
+          title="Ver Tienda Pública"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '40px',
+            borderRadius: '8px',
+            border: '1px dashed #3f3f46',
+            color: '#d4d4d8',
+            fontSize: '0.78rem',
+            textDecoration: 'none',
+          }}
+        >
+          {isCollapsed ? '←' : '← Ver Tienda Pública'}
+        </Link>
+      </div>
+
       {/* User Profile Footer & Logout */}
-      <div className="admin-user-footer">
+      <div
+        className="admin-user-footer"
+        style={{
+          flexDirection: isCollapsed ? 'column' : 'row',
+          gap: isCollapsed ? '0.6rem' : '0',
+        }}
+      >
         <div className="user-profile">
-          <div className="user-avatar">
-            <span>CM</span>
+          <div className="user-avatar" title="Administrador">
+            <span>AD</span>
           </div>
-          <div className="user-info">
-            <span className="user-name">Carlos Mendoza</span>
-            <span className="user-role">Super Administrador</span>
-          </div>
+          {!isCollapsed && (
+            <div className="user-info">
+              <span className="user-name">Administrador</span>
+            </div>
+          )}
         </div>
         <button
           onClick={handleLogout}
           className="btn-logout"
-          title="Cerrar Sesión"
+          title="Cerrar Sesión (Invalida Refresh Token)"
           aria-label="Cerrar Sesión"
+          style={{ minWidth: '40px', minHeight: '40px' }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -152,4 +229,3 @@ export default function AdminSidebar() {
     </aside>
   );
 }
-
