@@ -15,7 +15,7 @@ const corsOptions = {
     }
     return callback(new Error('Acceso no permitido por política de CORS'));
   },
-  methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
   credentials: true,
 };
