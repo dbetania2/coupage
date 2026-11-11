@@ -7,6 +7,7 @@ import { ORDERS_API_URL } from '@/features/orders/useOrders';
 export default function AdminSettingsPage() {
   const [healthStatus, setHealthStatus] = useState<string>('Verificando...');
   const [readyStatus, setReadyStatus] = useState<string>('Verificando...');
+  const [aiStatus, setAiStatus] = useState<string>('Verificando...');
   const catalogUrl = process.env.NEXT_PUBLIC_CATALOG_API_URL || 'http://127.0.0.1:8000/api';
   const ordersServerRoot = ORDERS_API_URL.replace(/\/api$/, '');
 
@@ -20,6 +21,17 @@ export default function AdminSettingsPage() {
       .then((r) => r.json())
       .then((d) => setReadyStatus(`OK (${d.status || 'READY'} - Firestore conectado)`))
       .catch(() => setReadyStatus('No disponible'));
+
+    fetch(`${ORDERS_API_URL}/ai/status`)
+      .then((r) => r.json())
+      .then((d) =>
+        setAiStatus(
+          `${d.provider || 'Activo'} · Modelo: ${d.model || 'llama-3.3-70b-versatile'} (${
+            d.toolsCount || 4
+          } Tools activas)`
+        )
+      )
+      .catch(() => setAiStatus('Pendiente de iniciar orders-api'));
   }, [ordersServerRoot]);
 
   const hasAccess = typeof window !== 'undefined' && Boolean(getAccessToken());
@@ -35,7 +47,7 @@ export default function AdminSettingsPage() {
           Configuración y Diagnóstico de APIs
         </h1>
         <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-          Estado en vivo de la conexión entre Next.js, Django DRF (Catalog API) y Node.js (Orders API + Cloud Firestore).
+          Estado en vivo de la conexión entre Next.js, Django DRF (Catalog API), Node.js (Orders API + Cloud Firestore) y el Asistente IA.
         </p>
       </header>
 
@@ -61,8 +73,8 @@ export default function AdminSettingsPage() {
             <code>{hasAccess ? 'Activo en sesión' : 'No presente'}</code><br />
             • <strong>Refresh Token JWT:</strong>{' '}
             <code>{hasRefresh ? 'Activo (Rotación habilitada)' : 'No presente'}</code><br />
-            • <strong>Modelo IA (Sprint 3 - T31):</strong>{' '}
-            <code>[Aquí irá estado de conexión con Claude API y Tool Calling en POST /api/ai/chat]</code>
+            • <strong>Motor Asistente IA (Sprint 3):</strong>{' '}
+            <code>{aiStatus}</code>
           </div>
         </section>
       </div>

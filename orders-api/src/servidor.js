@@ -5,7 +5,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import corsMiddleware from './infra/http/middlewares/cors.js';
 import errorMiddleware from './infra/http/middlewares/errorMiddleware.js';
-import { orderRouter } from './composicion.js';
+import { orderRouter, aiRouter } from './composicion.js';
 import { db } from './config/firebase.js';
 
 dotenv.config({ path: path.join(import.meta.dirname, '..', '.env') });
@@ -92,8 +92,9 @@ app.get('/ready', async (req, res) => {
   }
 });
 
-// Rutas de la API de pedidos
+// Rutas de la API de pedidos y del Asistente Operativo de IA
 app.use('/api/orders', orderRouter);
+app.use('/api/ai', aiRouter);
 
 // Middleware centralizado de errores (debe ir siempre al final de todas las rutas)
 app.use(errorMiddleware);

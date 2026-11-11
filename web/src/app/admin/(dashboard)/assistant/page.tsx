@@ -1,201 +1,253 @@
 'use client';
 
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect, useSyncExternalStore } from 'react';
+import Link from 'next/link';
+import { useAiAssistant, parseMarkdownBlocks, MarkdownTableBlock } from '@/features/ai/useAiAssistant';
+import { useOrders, OrderStatus } from '@/features/orders/useOrders';
 import styles from './assistant.module.css';
 
-type PromptCategory = 'preparacion' | 'auditoria' | 'catalogo';
+type PromptCategory = 'preparacion' | 'estados' | 'catalogo';
 
-interface SuggestedPrompt {
+interface QuickActionPrompt {
   id: string;
   category: PromptCategory;
+  title: string;
   promptText: string;
-  targetTool: string;
-  ticketRef: string;
 }
 
-interface PersistedSessionSlot {
-  id: string;
-  titlePlaceholder: string;
-  datePlaceholder: string;
-  messagesCountPlaceholder: string;
-}
-
-interface BackendToolSpec {
-  id: string;
-  name: string;
-  ticket: string;
-  moduleOrigin: string;
-  paramsPlaceholder: string;
-  returnPlaceholder: string;
-}
-
-const PERSISTED_SESSIONS: PersistedSessionSlot[] = [
+const QUICK_ACTIONS: QuickActionPrompt[] = [
   {
-    id: 'sess-active-1',
-    titlePlaceholder: '[Aquí va Título de Sesión Activa: Preparación del Día]',
-    datePlaceholder: '[Aquí va timestamp de última actividad]',
-    messagesCountPlaceholder: '[Cant. turnos guardados]',
-  },
-  {
-    id: 'sess-history-2',
-    titlePlaceholder: '[Aquí va Sesión Anterior #2: Revisión de Pendientes]',
-    datePlaceholder: '[Aquí va fecha de sesión en BD]',
-    messagesCountPlaceholder: '[Cant. turnos guardados]',
-  },
-  {
-    id: 'sess-history-3',
-    titlePlaceholder: '[Aquí va Sesión Anterior #3: Consulta de Cajas Cerradas]',
-    datePlaceholder: '[Aquí va fecha de sesión en BD]',
-    messagesCountPlaceholder: '[Cant. turnos guardados]',
-  },
-];
-
-const SUGGESTED_PROMPTS: SuggestedPrompt[] = [
-  {
-    id: 'sug-prep-1',
+    id: 'qa-prep-1',
     category: 'preparacion',
-    promptText: '¿Qué productos (por unidad y por caja) debo preparar para las solicitudes confirmadas de hoy?',
-    targetTool: 'consolidarListaPreparacion(fecha="hoy", estado="CONFIRMADO")',
-    ticketRef: 'T28 + T33',
+    title: 'Hoja de preparación del día',
+    promptText:
+      '¿Qué productos y cantidades exactas debo preparar hoy para cubrir las solicitudes pendientes y confirmadas? Armá una tabla detallada.',
   },
   {
-    id: 'sug-prep-2',
+    id: 'qa-prep-2',
     category: 'preparacion',
-    promptText: 'Generá una tabla consolidada de cajas de vino y delicatessen para los pedidos en estado PREPARADO.',
-    targetTool: 'agruparModalidadesPorEstado(estado="PREPARADO")',
-    ticketRef: 'T28 + T33',
+    title: 'Prioridad de despacho en cava',
+    promptText:
+      'Listá en una tabla las solicitudes confirmadas y en preparación ordenadas por monto total para priorizar el armado.',
   },
   {
-    id: 'sug-audit-1',
-    category: 'auditoria',
-    promptText: '¿Qué solicitudes en estado PENDIENTE llevan más tiempo esperando verificación física en cava?',
-    targetTool: 'consultarPedidosPorEstado(status="PENDIENTE", orden="antiguedad")',
-    ticketRef: 'T28',
+    id: 'qa-est-1',
+    category: 'estados',
+    title: 'Solicitudes pendientes de revisión',
+    promptText:
+      '¿Qué solicitudes están en estado PENDIENTE esperando verificación de stock? Incluí una tabla con código, cliente, productos y total.',
   },
   {
-    id: 'sug-audit-2',
-    category: 'auditoria',
-    promptText: 'Mostrame el resumen de solicitudes rechazadas o canceladas de la semana y sus motivos en history.',
-    targetTool: 'consultarHistorialEstados(estados=["RECHAZADO", "CANCELADO"])',
-    ticketRef: 'T28',
+    id: 'qa-est-2',
+    category: 'estados',
+    title: 'Balance general por estado',
+    promptText:
+      'Dame un resumen general de todas las solicitudes agrupadas por estado y el monto activo acumulado.',
   },
   {
-    id: 'sug-cat-1',
+    id: 'qa-cat-1',
     category: 'catalogo',
-    promptText: '¿Qué vinos tintos activos en el catálogo tienen habilitada la modalidad de venta por Caja de 6 unidades?',
-    targetTool: 'consultarCatalogoProductos(categoria="Vinos", modalidad="Caja")',
-    ticketRef: 'T27',
+    title: 'Ranking de etiquetas más pedidas',
+    promptText:
+      'Mostrame en una tabla el ranking de los vinos y productos más solicitados con sus unidades pedidas e ingresos.',
   },
   {
-    id: 'sug-cat-2',
+    id: 'qa-cat-2',
     category: 'catalogo',
-    promptText: 'Verificá cuáles son los precios vigentes en Django para la categoría Delicatessen.',
-    targetTool: 'leerPreciosVigentesCatalogo(categoria="Delicatessen")',
-    ticketRef: 'T27',
+    title: 'Listado de precios y modalidades',
+    promptText:
+      'Consultá el catálogo de productos y mostrame en una tabla las etiquetas registradas con su bodega y precios vigentes.',
   },
 ];
 
-const BACKEND_TOOLS_SPECS: BackendToolSpec[] = [
-  {
-    id: 'spec-tool-orders-1',
-    name: 'consultarPedidosPorEstado',
-    ticket: 'T28 · Tools de Pedidos',
-    moduleOrigin: 'Node.js · Cloud Firestore',
-    paramsPlaceholder: '{ status: "PENDIENTE" | "CONFIRMADO" | "PREPARADO" | "ENTREGADO", limit?: number }',
-    returnPlaceholder: '[Aquí devuelve la lista de pedidos filtrados con PII enmascarado (T35)]',
-  },
-  {
-    id: 'spec-tool-orders-2',
-    name: 'consolidarListaPreparacion',
-    ticket: 'T28 · Tools de Pedidos',
-    moduleOrigin: 'Node.js · Cloud Firestore',
-    paramsPlaceholder: '{ fecha: string, incluirModalidades: true }',
-    returnPlaceholder: '[Aquí suma cantidades por producto separando Unidades vs. Cajas]',
-  },
-  {
-    id: 'spec-tool-catalog-1',
-    name: 'consultarCatalogoProductos',
-    ticket: 'T27 · Tools de Catálogo',
-    moduleOrigin: 'Django DRF · PostgreSQL',
-    paramsPlaceholder: '{ category?: string, saleMode?: string, onlyActive: true }',
-    returnPlaceholder: '[Aquí consulta GET /api/products/ para informar precios y modalidades activas]',
-  },
-];
+function exportTableToCsv(table: MarkdownTableBlock, filename = 'reporte-asistente.csv') {
+  const escapeCsvCell = (cell: string) => `"${String(cell || '').replace(/"/g, '""')}"`;
+  const lines = [
+    table.headers.map(escapeCsvCell).join(','),
+    ...table.rows.map((row) => row.map(escapeCsvCell).join(',')),
+  ];
+  const csvContent = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+const emptySubscribe = () => () => {};
 
 export default function AdminAssistantPage() {
-  // Hooks en el nivel superior (Regla Sagrada de los Hooks - tipsdiseño.md Sección 2)
-  const [selectedSessionId, setSelectedSessionId] = useState<string>(PERSISTED_SESSIONS[0].id);
+  const {
+    engineStatus,
+    sessions,
+    activeSessionId,
+    messages,
+    loading,
+    error,
+    sendMessage,
+    selectSession,
+    startNewSession,
+    deleteSession,
+  } = useAiAssistant();
+
+  const { orders, loading: loadingOrders, reload: refreshOrders } = useOrders();
+
+  const counts = useMemo(() => {
+    return {
+      PENDIENTE: orders.filter((o) => o.status === 'PENDIENTE').length,
+      CONFIRMADO: orders.filter((o) => o.status === 'CONFIRMADO').length,
+      PREPARADO: orders.filter((o) => o.status === 'PREPARADO').length,
+      ENTREGADO: orders.filter((o) => o.status === 'ENTREGADO').length,
+    };
+  }, [orders]);
+
+  const isMounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
   const [activeCategory, setActiveCategory] = useState<PromptCategory>('preparacion');
-  const [selectedPrompt, setSelectedPrompt] = useState<SuggestedPrompt>(SUGGESTED_PROMPTS[0]);
   const [queryText, setQueryText] = useState<string>('');
-  const [confirmClearHistory, setConfirmClearHistory] = useState<boolean>(false);
+  const [sessionSearch, setSessionSearch] = useState<string>('');
+  const [selectedOrderFilter, setSelectedOrderFilter] = useState<OrderStatus>('PENDIENTE');
+  const [productLookupText, setProductLookupText] = useState<string>('');
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [confirmDeleteActive, setConfirmDeleteActive] = useState<boolean>(false);
 
-  // useRef para acceso directo al DOM sin provocar re-renders (tipsdiseño.md Sección 2)
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // useMemo para filtrar sugerencias por categoría activa (tipsdiseño.md Sección 2)
-  const visiblePrompts = useMemo(() => {
-    return SUGGESTED_PROMPTS.filter((p) => p.category === activeCategory);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [messages.length, loading]);
+
+  const visibleActions = useMemo(() => {
+    return QUICK_ACTIONS.filter((item) => item.category === activeCategory);
   }, [activeCategory]);
 
-  // useCallback para seleccionar un prompt sugerido y enfocar el input (Ley de Tesler)
-  const handleSelectPrompt = useCallback((prompt: SuggestedPrompt) => {
-    setSelectedPrompt(prompt);
-    setQueryText(prompt.promptText);
-    inputRef.current?.focus();
+  const filteredSessions = useMemo(() => {
+    const q = sessionSearch.trim().toLowerCase();
+    if (!q) return sessions;
+    return sessions.filter((s) => s.title.toLowerCase().includes(q));
+  }, [sessions, sessionSearch]);
+
+  const filteredLiveOrders = useMemo(() => {
+    return orders.filter((o) => o.status === selectedOrderFilter).slice(0, 8);
+  }, [orders, selectedOrderFilter]);
+
+  const activeSessionTitle = useMemo(() => {
+    if (!activeSessionId) return 'Nueva conversación';
+    const found = sessions.find((s) => s.id === activeSessionId);
+    return found ? found.title : `Conversación (${activeSessionId.slice(0, 8)})`;
+  }, [activeSessionId, sessions]);
+
+  const handleCopyText = useCallback(async (text: string, idx: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIndex(idx);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch {
+      // Silencioso si el navegador bloquea el portapapeles
+    }
   }, []);
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!queryText.trim() || loading) return;
+    const toSend = queryText;
+    setQueryText('');
+    void sendMessage(toSend);
+  };
+
+  const handleProductLookupSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const term = productLookupText.trim();
+    if (!term || loading) return;
+    setProductLookupText('');
+    void sendMessage(
+      `Buscá información sobre "${term}" tanto en el catálogo de productos como en las solicitudes de pedidos activas y mostrame precios y unidades solicitadas.`
+    );
+  };
+
+  const handleAnalyzeOrder = (orderNumber: string, status: string, customerName: string, totalAmount: number) => {
+    void sendMessage(
+      `Analizá el pedido ${orderNumber} (Estado actual: ${status}, Total: $${totalAmount.toLocaleString(
+        'es-AR'
+      )}): detallá en una tabla qué productos incluye y qué paso operativo corresponde realizar.`
+    );
+  };
+
+  const handleAnalyzeStatusGroup = (status: OrderStatus) => {
+    void sendMessage(
+      `Mostrame en una tabla todas las solicitudes que se encuentran en estado ${status} con sus productos y montos.`
+    );
+  };
+
+  const lastAssistantMessage = useMemo(() => {
+    return [...messages].reverse().find((m) => m.role === 'assistant') || null;
+  }, [messages]);
 
   return (
     <div className={styles.pageContainer}>
-      {/* Cabecera Semántica */}
+      {/* Cabecera Principal */}
       <header className={styles.headerBar}>
         <div>
           <span className={styles.eyebrow}>
-            <span>✨ Sprint 3 · HU5 · Tickets T25 a T36</span>
-            <span className={`${styles.statusPill} ${styles.statusInfo}`}>
-              🔒 Exclusivo Personal Autenticado (JWT)
+            <span>Asistente Operativo · Gestión de Cava y Pedidos</span>
+            <span className={`${styles.statusPill} ${styles.statusSuccess}`}>
+              ● {engineStatus?.apiKeyConfigured ? 'En línea' : 'Modo Local'}
             </span>
           </span>
-          <h1 className={styles.pageTitle}>
-            Asistente Operativo de IA — Tu Gusto Gourmet
-          </h1>
+          <h1 className={styles.pageTitle}>Asistente de Operaciones y Despacho</h1>
           <p className={styles.pageSubtitle}>
-            Consola de asistencia en lenguaje natural conectada a Claude API (Anthropic) mediante ejecución controlada
-            de herramientas de backend (Tool Calling), sin acceso libre a la base de datos.
+            Consultá solicitudes en tiempo real, generá hojas de preparación de pedidos en tabla, descargá reportes en
+            CSV y verificá disponibilidad del catálogo.
           </p>
         </div>
 
-        {/* Acciones de Cabecera con confirmación en acción destructiva (Ley de Fitts) */}
         <div className={styles.headerActions}>
           <button
             type="button"
             className={styles.btnSecondary}
-            onClick={() => inputRef.current?.focus()}
+            onClick={() => {
+              startNewSession();
+              inputRef.current?.focus();
+            }}
           >
-            ⌨️ Enfocar Consola (useRef)
+            + Nueva Conversación
           </button>
 
-          {!confirmClearHistory ? (
+          {activeSessionId && !confirmDeleteActive && (
             <button
               type="button"
               className={styles.btnDanger}
-              onClick={() => setConfirmClearHistory(true)}
+              onClick={() => setConfirmDeleteActive(true)}
             >
-              🗑 Limpiar Historial de Chat (T34)
+              🗑 Borrar Conversación
             </button>
-          ) : (
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          )}
+
+          {confirmDeleteActive && (
+            <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center' }}>
               <button
                 type="button"
                 className={styles.btnDanger}
-                onClick={() => setConfirmClearHistory(false)}
+                onClick={() => {
+                  void deleteSession(activeSessionId);
+                  setConfirmDeleteActive(false);
+                }}
               >
-                ⚠️ Confirmar Borrado de Sesión (DELETE /api/ai/sessions/:id)
+                Confirmar borrado
               </button>
               <button
                 type="button"
                 className={styles.btnSecondary}
-                onClick={() => setConfirmClearHistory(false)}
+                onClick={() => setConfirmDeleteActive(false)}
               >
                 Cancelar
               </button>
@@ -204,125 +256,236 @@ export default function AdminAssistantPage() {
         </div>
       </header>
 
-      {/* Grilla Principal de 12 Columnas (3 + 6 + 3 en Desktop) */}
+      {error && (
+        <div
+          role="alert"
+          style={{
+            padding: '0.85rem 1rem',
+            borderRadius: '8px',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#b91c1c',
+            fontSize: '0.84rem',
+          }}
+        >
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Grilla Principal (3 + 6 + 3) */}
       <div className={styles.workspaceGrid}>
-        {/* ====================================================================
-            COLUMNA IZQUIERDA (3 cols): Sesiones (T26), Rate Limit (T31) y Prompt (T25)
-            ==================================================================== */}
-        <aside className={styles.colSessions} aria-label="Gestión de sesiones y control de costos">
-          {/* T26: Persistencia de Sesiones de Chat */}
+        {/* COLUMNA IZQUIERDA: Historial de Conversaciones, Buscador y Estado */}
+        <aside className={styles.colSessions} aria-label="Historial de conversaciones">
           <section className={styles.card}>
             <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}>1. Sesiones de Chat (T26)</h2>
-              <span className={`${styles.statusPill} ${styles.statusSuccess}`}>● BD Activa</span>
+              <h2 className={styles.cardTitle}>Conversaciones</h2>
+              <span className={`${styles.statusPill} ${styles.statusInfo}`}>
+                {sessions.length} guardadas
+              </span>
             </div>
 
-            <button type="button" className={styles.btnPrimary} style={{ width: '100%' }}>
-              + Nueva Sesión Operativa
-            </button>
+            <input
+              type="search"
+              value={sessionSearch}
+              onChange={(e) => setSessionSearch(e.target.value)}
+              placeholder="Buscar conversación anterior..."
+              className={styles.searchBox}
+              aria-label="Buscar conversación por título"
+            />
 
-            <p style={{ fontSize: '0.75rem', color: '#475569', lineHeight: 1.45 }}>
-              [Aquí se listan las sesiones de conversación guardadas en base de datos para mantener el contexto del
-              turno de trabajo]:
-            </p>
+            {messages.length >= 12 && (
+              <div
+                style={{
+                  padding: '0.55rem 0.7rem',
+                  borderRadius: '6px',
+                  backgroundColor: '#fefce8',
+                  border: '1px solid #fde047',
+                  color: '#854d0e',
+                  fontSize: '0.73rem',
+                  lineHeight: 1.4,
+                }}
+              >
+                💡 Esta sesión tiene {messages.length} mensajes. Si cambiás de turno o tarea, te sugerimos abrir una{' '}
+                <strong>Nueva Conversación</strong> para mantener respuestas ágiles.
+              </div>
+            )}
 
             <div className={styles.sessionList}>
-              {PERSISTED_SESSIONS.map((sess) => (
-                <button
-                  key={sess.id}
-                  type="button"
-                  onClick={() => setSelectedSessionId(sess.id)}
-                  className={`${styles.sessionCard} ${
-                    selectedSessionId === sess.id ? styles.sessionCardActive : ''
-                  }`}
-                >
-                  <span className={styles.sessionTitle}>{sess.titlePlaceholder}</span>
-                  <span className={styles.sessionMeta}>
-                    {sess.datePlaceholder} · {sess.messagesCountPlaceholder}
-                  </span>
-                </button>
-              ))}
+              {filteredSessions.length === 0 ? (
+                <p style={{ fontSize: '0.76rem', color: '#71717a', padding: '0.25rem 0' }}>
+                  {sessionSearch
+                    ? 'No se encontraron conversaciones con ese nombre.'
+                    : 'Todavía no hay conversaciones guardadas. Enviá una consulta para iniciar.'}
+                </p>
+              ) : (
+                filteredSessions.map((sess) => (
+                  <div
+                    key={sess.id}
+                    className={`${styles.sessionCard} ${
+                      activeSessionId === sess.id ? styles.sessionCardActive : ''
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => void selectSession(sess.id)}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        textAlign: 'left',
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.18rem',
+                      }}
+                    >
+                      <span className={styles.sessionTitle}>{sess.title}</span>
+                      <span className={styles.sessionMeta}>
+                        {sess.messagesCount} mensajes ·{' '}
+                        {isMounted && sess.updatedAt
+                          ? new Date(sess.updatedAt).toLocaleTimeString('es-AR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : 'Reciente'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void deleteSession(sess.id);
+                      }}
+                      title="Eliminar conversación"
+                      aria-label={`Eliminar ${sess.title}`}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#71717a',
+                        cursor: 'pointer',
+                        fontSize: '0.78rem',
+                        padding: '0.2rem 0.35rem',
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </section>
 
-          {/* T31: Rate Limiting y Control de Costos (Tokens) */}
+          {/* Buscador Rápido por Etiqueta o Bodega */}
           <section className={styles.card}>
             <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}>2. Control de Costos (T31)</h2>
-              <span className={`${styles.statusPill} ${styles.statusInfo}`}>⚡ Rate Limit OK</span>
+              <h2 className={styles.cardTitle}>Consulta por Etiqueta</h2>
+              <span className={`${styles.statusPill} ${styles.statusInfo}`}>Catálogo + Pedidos</span>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: '#52525b', lineHeight: 1.4 }}>
+              Verificá al instante cuántas unidades se solicitaron de un vino o bodega y su precio vigente:
+            </p>
+            <form onSubmit={handleProductLookupSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <input
+                type="text"
+                value={productLookupText}
+                onChange={(e) => setProductLookupText(e.target.value)}
+                disabled={loading}
+                placeholder="Ej: Malbec, Rutini, Luigi Bosca..."
+                className={styles.searchBox}
+                aria-label="Nombre de vino o bodega a consultar"
+              />
+              <button
+                type="submit"
+                disabled={loading || !productLookupText.trim()}
+                className={styles.btnSecondary}
+                style={{ width: '100%' }}
+              >
+                🔍 Consultar demanda y precio
+              </button>
+            </form>
+          </section>
+
+          {/* Capacidad y Estado del Servicio */}
+          <section className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h2 className={styles.cardTitle}>Capacidad Operativa</h2>
+              <span className={`${styles.statusPill} ${styles.statusSuccess}`}>Disponible</span>
             </div>
 
-            <div style={{ fontSize: '0.8rem', color: '#1e293b', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ fontSize: '0.76rem', color: '#27272a', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Presupuesto de Tokens:</span>
-                <strong>[Aquí va X / Máx Tokens]</strong>
+                <span>Consultas disponibles / min:</span>
+                <strong>
+                  {engineStatus?.rateLimit
+                    ? `${engineStatus.rateLimit.remainingInWindow} de ${engineStatus.rateLimit.maxPerMinute}`
+                    : '12 de 12'}
+                </strong>
               </div>
-              <div className={styles.quotaMeter} role="progressbar" aria-valuenow={35} aria-valuemin={0} aria-valuemax={100}>
-                <div className={styles.quotaFill} />
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Capacidad del turno:</span>
+                <strong>{100 - (engineStatus?.quota.percentage || 0)}% libre</strong>
               </div>
-              <p style={{ fontSize: '0.74rem', color: '#475569', lineHeight: 1.45 }}>
-                • <strong>Ventana de Peticiones:</strong> <code>[Aquí va cant. consultas / minuto por admin]</code>
-                <br />• <strong>Protección de Cuota:</strong> Si se alcanza el umbral, el backend en Node.js responde{' '}
-                <code>HTTP 429 Too Many Requests</code>.
-              </p>
-            </div>
-          </section>
-
-          {/* T25: Configuración Base y System Prompt */}
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}>3. System Prompt (T25)</h2>
-              <span className={`${styles.statusPill} ${styles.statusSuccess}`}>✓ Grounded</span>
-            </div>
-            <div style={{ fontSize: '0.76rem', color: '#334155', lineHeight: 1.5 }}>
-              <strong>[Aquí va la directiva de rol configurada en el SDK de Claude]:</strong>
-              <br />
-              • Rol exclusivo: Asistente interno de <em>Tu Gusto Gourmet</em>.
-              <br />
-              • Prohibido inventar stock, precios o estados que no provengan de las Tools.
-              <br />
-              • Formato de salida preferido: Tablas Markdown claras para armado de pedidos en cava.
+              <div className={styles.quotaMeter}>
+                <div
+                  className={styles.quotaFill}
+                  style={{ width: `${Math.max(3, engineStatus?.quota.percentage || 2)}%` }}
+                />
+              </div>
             </div>
           </section>
         </aside>
 
-        {/* ====================================================================
-            COLUMNA CENTRAL (6 cols): Consola SSE (T30/T32), Markdown (T33) y Sugerencias (T34)
-            ==================================================================== */}
-        <section className={styles.colChat} aria-label="Consola de conversación con el asistente IA">
+        {/* COLUMNA CENTRAL: Consola de Chat + Reportes y Exportación CSV */}
+        <section className={styles.colChat} aria-label="Consola de conversación">
           <div className={styles.chatConsole}>
-            {/* Barra Superior de Conexión Streaming SSE (T30) */}
             <div className={styles.chatTopBar}>
-              <div>
-                <span style={{ fontSize: '0.7rem', color: '#a1a1aa', fontWeight: 700, textTransform: 'uppercase' }}>
-                  T30 &amp; T32 · Server-Sent Events (text/event-stream)
+              <div style={{ minWidth: 0 }}>
+                <span style={{ fontSize: '0.68rem', color: '#a1a1aa', fontWeight: 600, textTransform: 'uppercase' }}>
+                  Conversación Activa
                 </span>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>
-                  Sesión activa: <code>[Aquí va {selectedSessionId}]</code>
+                <div
+                  style={{
+                    fontSize: '0.92rem',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {activeSessionTitle}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className={`${styles.statusPill} ${styles.statusSuccess}`}>
-                  ● Streaming SSE Listo
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                {lastAssistantMessage && (
+                  <button
+                    type="button"
+                    className={styles.topBarBtn}
+                    onClick={() => void handleCopyText(lastAssistantMessage.content, -1)}
+                  >
+                    {copiedIndex === -1 ? '✓ Copiado' : '📋 Copiar último reporte'}
+                  </button>
+                )}
                 <button
                   type="button"
-                  className={styles.btnSecondary}
-                  style={{ minHeight: '36px', padding: '0.25rem 0.65rem', fontSize: '0.74rem' }}
+                  className={styles.topBarBtn}
+                  onClick={startNewSession}
+                  disabled={loading}
                 >
-                  ⏹ [Detener Generación]
+                  + Nuevo Chat
                 </button>
               </div>
             </div>
 
-            {/* T34: UI de Sugerencias Rápidas divididas en 3 categorías (Ley de Hick + Ley de Tesler) */}
+            {/* Atajos de Reportes Operativos */}
             <div className={styles.suggestionsSection}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase' }}>
-                  💡 Consultas Operativas Frecuentes (T34 — Clic para autocompletar):
+                <span style={{ fontSize: '0.73rem', fontWeight: 700, color: '#27272a', textTransform: 'uppercase' }}>
+                  Reportes y Consultas Frecuentes:
                 </span>
-                <div className={styles.tabsRow} role="tablist" aria-label="Categorías de sugerencias">
+                <div className={styles.tabsRow} role="tablist">
                   <button
                     type="button"
                     role="tab"
@@ -330,16 +493,16 @@ export default function AdminAssistantPage() {
                     onClick={() => setActiveCategory('preparacion')}
                     className={`${styles.tabBtn} ${activeCategory === 'preparacion' ? styles.tabBtnActive : ''}`}
                   >
-                    📦 Preparación del Día
+                    📦 Armado en Cava
                   </button>
                   <button
                     type="button"
                     role="tab"
-                    aria-selected={activeCategory === 'auditoria'}
-                    onClick={() => setActiveCategory('auditoria')}
-                    className={`${styles.tabBtn} ${activeCategory === 'auditoria' ? styles.tabBtnActive : ''}`}
+                    aria-selected={activeCategory === 'estados'}
+                    onClick={() => setActiveCategory('estados')}
+                    className={`${styles.tabBtn} ${activeCategory === 'estados' ? styles.tabBtnActive : ''}`}
                   >
-                    ⏳ Demoras y Estados
+                    ⏳ Control de Estados
                   </button>
                   <button
                     type="button"
@@ -348,230 +511,279 @@ export default function AdminAssistantPage() {
                     onClick={() => setActiveCategory('catalogo')}
                     className={`${styles.tabBtn} ${activeCategory === 'catalogo' ? styles.tabBtnActive : ''}`}
                   >
-                    🍷 Catálogo y Modalidades
+                    🍷 Demanda y Catálogo
                   </button>
                 </div>
               </div>
 
-              {/* Lista de Chips con keys únicas y estables (tipsdiseño.md Sección 1) */}
               <div className={styles.chipsGrid}>
-                {visiblePrompts.map((item) => (
+                {visibleActions.map((item) => (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => handleSelectPrompt(item)}
+                    disabled={loading}
+                    onClick={() => void sendMessage(item.promptText)}
                     className={styles.promptChip}
                   >
-                    <span>💬 {item.promptText}</span>
-                    <span className={`${styles.statusPill} ${styles.statusInfo}`}>
-                      {item.ticketRef}
-                    </span>
+                    <span>{item.title}</span>
+                    <span style={{ color: '#71717a', fontSize: '0.75rem' }}>→</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Viewport de Mensajes y Ejecución de Tools */}
+            {/* Historial de Mensajes */}
             <div className={styles.messagesViewport}>
-              {/* 1. Mensaje del Administrador */}
-              <article className={styles.userBubble}>
-                <strong style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', opacity: 0.9, marginBottom: '0.25rem' }}>
-                  👤 [Aquí va la consulta enviada por el personal de tienda]:
-                </strong>
-                {selectedPrompt.promptText}
-              </article>
-
-              {/* 2. T29: Motor de Despacho (Dispatcher) y Ejecución de Tool Calling */}
-              <section className={styles.dispatcherTrace} aria-label="Traza de ejecución del Dispatcher">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <strong style={{ color: '#0f172a' }}>
-                    ⚙️ [Aquí va el Motor de Despacho (Dispatcher - T29) ejecutando Tool Calling]:
-                  </strong>
-                  <span className={`${styles.statusPill} ${styles.statusSuccess}`}>
-                    ✓ Tool Ejecutada Sin Acceso Directo a BD
-                  </span>
-                </div>
-
-                <div className={styles.traceSteps}>
-                  <div className={styles.traceStepItem}>
-                    <strong>Paso 1 (Claude Tool Use):</strong>
-                    <br />
-                    <code>[Aquí selecciona: {selectedPrompt.targetTool}]</code>
-                  </div>
-                  <div className={styles.traceStepItem}>
-                    <strong>Paso 2 (Ejecución Backend):</strong>
-                    <br />
-                    <code>[Aquí Node.js consulta Firestore / Catalog API]</code>
-                  </div>
-                  <div className={styles.traceStepItem}>
-                    <strong>Paso 3 (Sanitización PII - T35):</strong>
-                    <br />
-                    <code>[Aquí se enmascaran teléfonos/emails del resultado]</code>
-                  </div>
-                  <div className={styles.traceStepItem}>
-                    <strong>Paso 4 (Streaming SSE - T30):</strong>
-                    <br />
-                    <code>[Aquí se emiten los chunks de texto al navegador]</code>
-                  </div>
-                </div>
-              </section>
-
-              {/* 3. T32 & T33: Respuesta del Agente con Renderizado de Markdown y Tablas Dinámicas */}
-              <article className={styles.assistantBubble}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <strong style={{ color: '#27272a', fontSize: '0.9rem' }}>
-                    🤖 [Aquí va la Respuesta en Streaming (T32) + Renderizado Markdown (T33)]:
-                  </strong>
-                  <span className={`${styles.statusPill} ${styles.statusInfo}`}>
-                    ✓ Datos Verificados (Grounding T36)
-                  </span>
-                </div>
-
+              {messages.length === 0 ? (
                 <div className={styles.placeholderBanner}>
-                  <strong>[Aquí va el resumen narrativo en Markdown]:</strong>
+                  <strong>Asistente listo para tu turno operativo</strong>
                   <br />
-                  Aquí el asistente resumirá cuántas solicitudes fueron encontradas en el estado consultado y detallará
-                  la lista consolidada de preparación separando <strong>Unidades sueltas</strong> y{' '}
-                  <strong>Cajas cerradas</strong> para que el empleado retire de cava.
+                  Seleccioná cualquiera de los reportes frecuentes de arriba, hacé clic en un pedido de la columna
+                  derecha para analizarlo, o escribí tu consulta abajo.
                 </div>
+              ) : (
+                messages.map((msg, idx) => {
+                  if (msg.role === 'user') {
+                    return (
+                      <article key={`msg-${idx}`} className={styles.userBubble}>
+                        {msg.content}
+                      </article>
+                    );
+                  }
 
-                {/* Tabla Dinámica Markdown (T33) */}
-                <div className="admin-table-card">
-                  <div style={{ padding: '0.75rem 1rem', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ fontSize: '0.78rem', color: '#0f172a', textTransform: 'uppercase' }}>
-                      📊 [Aquí se renderiza la Tabla Dinámica Markdown de Preparación (T33)]
-                    </strong>
-                    <button type="button" className={styles.btnSecondary} style={{ minHeight: '32px', padding: '0.25rem 0.6rem', fontSize: '0.72rem' }}>
-                      📋 [Copiar Resumen]
-                    </button>
-                  </div>
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Producto (Vino / Licor / Delicatessen)</th>
-                        <th>Modalidad Requerida</th>
-                        <th>Cant. Total a Preparar</th>
-                        <th>Solicitudes Asociadas</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td><strong>[Aquí va Nombre del Producto #1]</strong></td>
-                        <td><span className={`${styles.statusPill} ${styles.statusInfo}`}>📦 [Aquí va: Caja x 6 un.]</span></td>
-                        <td><strong>[Aquí va Total Cajas]</strong></td>
-                        <td><code>[Aquí van #ORD-XXXX, #ORD-YYYY]</code></td>
-                      </tr>
-                      <tr>
-                        <td><strong>[Aquí va Nombre del Producto #2]</strong></td>
-                        <td><span className={`${styles.statusPill} ${styles.statusSuccess}`}>🍾 [Aquí va: Por Unidad]</span></td>
-                        <td><strong>[Aquí va Total Unidades]</strong></td>
-                        <td><code>[Aquí va #ORD-ZZZZ]</code></td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  const blocks = parseMarkdownBlocks(msg.content);
+                  const traces = msg.toolTraces && msg.toolTraces.length > 0 ? msg.toolTraces : [];
+                  const firstTable = blocks.find((b): b is MarkdownTableBlock => b.type === 'table');
+
+                  return (
+                    <article key={`msg-${idx}`} className={styles.assistantBubble}>
+                      <div className={styles.bubbleHeader}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                          <strong style={{ color: '#18181b', fontSize: '0.84rem' }}>Asistente Operativo</strong>
+                          {traces.length > 0 && (
+                            <span className={`${styles.statusPill} ${styles.statusInfo}`}>
+                              ✓ Datos en vivo ({traces.map((t) => t.source.split(' ')[0]).join(' + ')})
+                            </span>
+                          )}
+                        </div>
+
+                        <div className={styles.bubbleActions}>
+                          <button
+                            type="button"
+                            className={styles.actionMiniBtn}
+                            onClick={() => void handleCopyText(msg.content, idx)}
+                          >
+                            {copiedIndex === idx ? '✓ Copiado' : '📋 Copiar'}
+                          </button>
+                          {firstTable && (
+                            <button
+                              type="button"
+                              className={styles.actionMiniBtn}
+                              onClick={() =>
+                                exportTableToCsv(firstTable, `reporte-cava-${new Date().toISOString().slice(0, 10)}.csv`)
+                              }
+                            >
+                              📥 Descargar CSV
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {blocks.map((block, bIdx) => {
+                        if (block.type === 'table') {
+                          return (
+                            <div key={`blk-${bIdx}`} className="admin-table-card">
+                              <div className="admin-table-scroll">
+                                <table className="admin-table">
+                                  <thead>
+                                    <tr>
+                                      {block.headers.map((h, hIdx) => (
+                                        <th key={`th-${hIdx}`}>{h}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {block.rows.map((row, rIdx) => (
+                                      <tr key={`tr-${rIdx}`}>
+                                        {row.map((cell, cIdx) => (
+                                          <td key={`td-${cIdx}`}>{cell}</td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div
+                            key={`blk-${bIdx}`}
+                            style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, color: '#18181b' }}
+                          >
+                            {block.text}
+                          </div>
+                        );
+                      })}
+                    </article>
+                  );
+                })
+              )}
+
+              {loading && (
+                <div className={styles.placeholderBanner}>
+                  ⏳ <strong>Elaborando respuesta...</strong> Consultando datos actualizados del sistema.
                 </div>
-
-                {/* Previsualización de Plantillas de Fallback (T29) y Bloqueo de Inyección (T36) */}
-                <div className={styles.statesPreviewGrid}>
-                  <div className={styles.fallbackBox}>
-                    <strong>⚠️ [Plantilla de Fallback / Error de Tool (T29)]:</strong>
-                    <br />
-                    Aquí se mostrará un aviso controlado si <code>catalog-api</code> o Firestore demoran o fallan,
-                    sin exponer trazas internas del servidor.
-                  </div>
-
-                  <div className={styles.guardrailBox}>
-                    <strong>🛡️ [Plantilla de Bloqueo de Inyección / Salida de Rol (T36)]:</strong>
-                    <br />
-                    Aquí se mostrará el rechazo seguro si alguien intenta pedirle a la IA tareas ajenas a la vinoteca o
-                    modificar datos sin autorización.
-                  </div>
-                </div>
-              </article>
+              )}
+              <div ref={messagesEndRef} />
             </div>
 
-            {/* Formulario Inferior de Consulta */}
-            <form
-              className={styles.chatInputArea}
-              onSubmit={(e) => {
-                e.preventDefault();
-              }}
-            >
+            {/* Formulario Inferior */}
+            <form className={styles.chatInputArea} onSubmit={handleFormSubmit}>
               <div className={styles.inputRow}>
                 <input
                   ref={inputRef}
                   type="text"
                   value={queryText}
                   onChange={(e) => setQueryText(e.target.value)}
+                  disabled={loading}
                   className={styles.chatInput}
-                  placeholder="[Aquí el personal escribe su consulta en lenguaje natural, ej: '¿Qué cajas debo armar hoy?']"
-                  aria-label="Escribir consulta operativa para el asistente de IA"
+                  placeholder="Escribí una pregunta sobre pedidos, armado de cajas, estados o catálogo..."
+                  aria-label="Escribir consulta para el asistente"
                 />
-                <button type="submit" className={styles.btnPrimary}>
-                  Enviar Consulta (SSE) →
+                <button type="submit" disabled={loading || !queryText.trim()} className={styles.btnPrimary}>
+                  {loading ? 'Consultando...' : 'Enviar →'}
                 </button>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem', color: '#475569', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <span>
-                  Endpoint: <code>POST /api/ai/chat</code> · Header: <code>Authorization: Bearer &lt;JWT&gt;</code>
-                </span>
-                <span>
-                  Grounding estricto (T36): Solo lectura mediante Tools autorizadas
-                </span>
               </div>
             </form>
           </div>
         </section>
 
-        {/* ====================================================================
-            COLUMNA DERECHA (3 cols): Tools de Catálogo (T27), Pedidos (T28) y PII (T35)
-            ==================================================================== */}
-        <aside className={styles.colInspector} aria-label="Inspector de herramientas y seguridad">
-          {/* T27 y T28: Especificación de Tools disponibles */}
+        {/* COLUMNA DERECHA: Monitor Operativo de Pedidos en Vivo y Análisis Directo */}
+        <aside className={styles.colInspector} aria-label="Monitor operativo de solicitudes en vivo">
           <section className={styles.card}>
             <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}>4. Tools Backend (T27 &amp; T28)</h2>
-              <span className={`${styles.statusPill} ${styles.statusInfo}`}>3 Tools</span>
+              <h2 className={styles.cardTitle}>Monitor de Solicitudes</h2>
+              <button
+                type="button"
+                onClick={() => void refreshOrders()}
+                className={styles.actionMiniBtn}
+                title="Actualizar estado de solicitudes"
+              >
+                {loadingOrders ? '...' : '↻ Actualizar'}
+              </button>
             </div>
 
-            <p style={{ fontSize: '0.75rem', color: '#475569', lineHeight: 1.45 }}>
-              [Aquí se muestran las herramientas declaradas en el esquema JSON de Claude API y despachadas por Node.js]:
-            </p>
+            <div className={styles.kpiGrid}>
+              <button
+                type="button"
+                onClick={() => setSelectedOrderFilter('PENDIENTE')}
+                className={`${styles.kpiBox} ${selectedOrderFilter === 'PENDIENTE' ? styles.kpiBoxActive : ''}`}
+              >
+                <span className={styles.kpiValue}>{counts.PENDIENTE}</span>
+                <span className={styles.kpiLabel}>Pendientes</span>
+              </button>
 
-            {BACKEND_TOOLS_SPECS.map((tool) => (
-              <article key={tool.id} className={styles.toolCard}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <strong style={{ color: '#27272a' }}>{tool.name}()</strong>
-                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#475569' }}>{tool.ticket}</span>
-                </div>
-                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Origen: {tool.moduleOrigin}</span>
-                <div className={styles.codeSnippet}>{tool.paramsPlaceholder}</div>
-                <p style={{ color: '#334155', marginTop: '0.25rem' }}>{tool.returnPlaceholder}</p>
-              </article>
-            ))}
+              <button
+                type="button"
+                onClick={() => setSelectedOrderFilter('CONFIRMADO')}
+                className={`${styles.kpiBox} ${selectedOrderFilter === 'CONFIRMADO' ? styles.kpiBoxActive : ''}`}
+              >
+                <span className={styles.kpiValue}>{counts.CONFIRMADO}</span>
+                <span className={styles.kpiLabel}>Confirmados</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedOrderFilter('PREPARADO')}
+                className={`${styles.kpiBox} ${selectedOrderFilter === 'PREPARADO' ? styles.kpiBoxActive : ''}`}
+              >
+                <span className={styles.kpiValue}>{counts.PREPARADO}</span>
+                <span className={styles.kpiLabel}>Preparados</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedOrderFilter('ENTREGADO')}
+                className={`${styles.kpiBox} ${selectedOrderFilter === 'ENTREGADO' ? styles.kpiBoxActive : ''}`}
+              >
+                <span className={styles.kpiValue}>{counts.ENTREGADO}</span>
+                <span className={styles.kpiLabel}>Entregados</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => handleAnalyzeStatusGroup(selectedOrderFilter)}
+              className={styles.btnSecondary}
+              style={{ width: '100%' }}
+            >
+              📊 Auditar {selectedOrderFilter.toLowerCase()}s en el chat
+            </button>
           </section>
 
-          {/* T35: Enmascaramiento de Datos Sensibles (PII) */}
+          {/* Cola de Solicitudes según el estado seleccionado */}
           <section className={styles.card}>
             <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}>5. Sanitización PII (T35)</h2>
-              <span className={`${styles.statusPill} ${styles.statusWarning}`}>🛡️ Filtro Activo</span>
+              <h2 className={styles.cardTitle}>Cola: {selectedOrderFilter}</h2>
+              <Link
+                href="/admin/orders"
+                style={{ fontSize: '0.72rem', fontWeight: 600, color: '#3f3f46', textDecoration: 'underline' }}
+              >
+                Gestionar todos ↗
+              </Link>
             </div>
 
-            <p style={{ fontSize: '0.76rem', color: '#334155', lineHeight: 1.5 }}>
-              Antes de enviar el resultado de una Tool de pedidos hacia la API externa de Anthropic, el middleware de
-              Node.js reemplaza los datos personales del comprador:
-            </p>
+            <div className={styles.liveOrdersList}>
+              {filteredLiveOrders.length === 0 ? (
+                <p style={{ fontSize: '0.76rem', color: '#71717a' }}>
+                  No hay solicitudes en estado <strong>{selectedOrderFilter}</strong> en este momento.
+                </p>
+              ) : (
+                filteredLiveOrders.map((ord) => {
+                  const totalUnits = (ord.items || []).reduce((acc, i) => acc + Number(i.quantity || 0), 0);
+                  return (
+                    <article key={ord.id} className={styles.liveOrderItem}>
+                      <div className={styles.liveOrderTop}>
+                        <strong style={{ color: '#18181b' }}>{ord.orderNumber || ord.id}</strong>
+                        <span style={{ fontWeight: 700, color: '#27272a' }}>
+                          ${Number(ord.totalAmount || 0).toLocaleString('es-AR')}
+                        </span>
+                      </div>
 
-            <div className={styles.codeSnippet}>
-              {`// [Aquí actúa el sanitizador PII (T35)]
-customer: {
-  name: "[Nombre Inicial + ***]",
-  email: "[u***@dominio.com]",
-  phone: "[***-***-9988]",
-  address: "[Omitido para el LLM]"
-}`}
+                      <div style={{ color: '#52525b', fontSize: '0.73rem' }}>
+                        {ord.customer?.name || 'Cliente'} · {totalUnits} u. ({ord.items?.length || 0} ítem/s)
+                      </div>
+
+                      <div className={styles.liveOrderActions}>
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() =>
+                            handleAnalyzeOrder(
+                              ord.orderNumber || ord.id,
+                              ord.status,
+                              ord.customer?.name || 'Cliente',
+                              Number(ord.totalAmount || 0)
+                            )
+                          }
+                          className={styles.actionMiniBtn}
+                        >
+                          ✨ Analizar en chat
+                        </button>
+                        <Link
+                          href="/admin/orders"
+                          style={{ fontSize: '0.7rem', color: '#52525b', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          Ver detalle →
+                        </Link>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
             </div>
           </section>
         </aside>
