@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminAssistantWidget from '@/components/admin/AdminAssistantWidget';
+import { AiAssistantProvider } from '@/features/ai/useAiAssistant';
 import '../admin.css';
 
 export default function AdminLayout({
@@ -38,17 +39,19 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="admin-layout-container">
-      {/* Sidebar fijo a la izquierda */}
-      <AdminSidebar />
-      
-      {/* Contenido dinámico de las páginas administrativas */}
-      <main className="admin-main">
-        {children}
-      </main>
+    <AiAssistantProvider>
+      <div className="admin-layout-container">
+        {/* Sidebar fijo a la izquierda */}
+        <AdminSidebar />
+        
+        {/* Contenido dinámico de las páginas administrativas */}
+        <main className="admin-main">
+          {children}
+        </main>
 
-      {/* Widget Flotante del Asistente Operativo de IA (HU5 - T32/T34) */}
-      <AdminAssistantWidget />
-    </div>
+        {/* Widget Flotante del Asistente Operativo de IA (HU5 - T32/T34) */}
+        <AdminAssistantWidget />
+      </div>
+    </AiAssistantProvider>
   );
 }
