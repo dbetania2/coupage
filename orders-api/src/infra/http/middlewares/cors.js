@@ -1,15 +1,15 @@
 import cors from 'cors';
 
-// Orígenes permitidos leídos del entorno
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || '')
-  .split(',')
-  .map(origin => origin.trim())
-  .filter(Boolean);
-
 // Configuración de reglas y cabeceras de CORS
 const corsOptions = {
   origin: (origin, callback) => {
-    // Permite peticiones sin origen (curl/Postman) o dentro de la lista blanca
+    // Se lee en tiempo de petición para que dotenv.config() ya haya cargado el .env
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    // Permite peticiones sin origen (curl/Postman) o dentro de la lista blanca del .env
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -17,7 +17,7 @@ const corsOptions = {
   },
   methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
-  credentials: true
+  credentials: true,
 };
 
 // Middleware exportado para Express
