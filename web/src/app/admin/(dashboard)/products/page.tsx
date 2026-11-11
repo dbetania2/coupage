@@ -314,12 +314,12 @@ export default function AdminProductsPage() {
           position: 'fixed',
           bottom: '2rem',
           right: '2rem',
-          backgroundColor: '#0d1527',
+          backgroundColor: '#18181b',
           color: '#ffffff',
           padding: '1rem 1.5rem',
           borderRadius: '10px',
           boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-          border: '1px solid #2563eb',
+          border: '1px solid #3f3f46',
           zIndex: 9999,
           display: 'flex',
           alignItems: 'center',
@@ -753,7 +753,7 @@ export default function AdminProductsPage() {
                   id="isActiveToggle"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  style={{ width: '18px', height: '18px', accentColor: '#2563eb', cursor: 'pointer' }}
+                  style={{ width: '18px', height: '18px', accentColor: '#27272a', cursor: 'pointer' }}
                 />
                 <label htmlFor="isActiveToggle" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}>
                   Producto Activo (Visible en el catálogo público)

@@ -10,6 +10,7 @@ interface DjangoProduct {
   brand?: { name: string } | null;
   images: { url: string }[];
   sale_modes: {
+    id?: number;
     type: string;
     prices: { amount: string | number }[];
   }[];
@@ -20,6 +21,17 @@ export default function Home() {
   const [totalCount, setTotalCount] = useState<number>(0);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [ordering, setOrdering] = useState<string>('-id');
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const handleCategoryChange = (category: string) => {
+    setLoading(true);
+    setSelectedCategory(category);
+  };
+
+  const handleOrderingChange = (value: string) => {
+    setLoading(true);
+    setOrdering(value);
+  };
 
   // Efecto que llama a Django cada vez que cambia la categoría o el orden seleccionado
   useEffect(() => {
@@ -35,59 +47,70 @@ export default function Home() {
     const url = `${baseUrl}/products/${queryString ? `?${queryString}` : ''}`;
 
     fetch(url)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         const rawList: DjangoProduct[] = Array.isArray(data) ? data : (data.results || []);
-        // Adaptamos el JSON complejo de Django al formato simple de las tarjetas
-        const formattedProducts = rawList.map((p: DjangoProduct) => ({
-          id: p.id,
-          brand: p.brand ? p.brand.name : 'GENÉRICO',
-          name: p.name,
-          // Tomamos el primer precio de la primera modalidad de venta si existe
-          price: p.sale_modes && p.sale_modes.length > 0 && p.sale_modes[0].prices.length > 0 
-            ? `$${p.sale_modes[0].prices[0].amount}` 
-            : 'Consultar',
-          saleMode: p.sale_modes && p.sale_modes.length > 0 ? p.sale_modes[0].type : 'Consultar',
-          imageUrl: p.images && p.images.length > 0 ? p.images[0].url : '',
-          isExclusive: true // hardcodeado para mantener la estética
-        }));
+        const formattedProducts: ProductCardProps[] = rawList.map((p: DjangoProduct) => {
+          const firstMode = p.sale_modes && p.sale_modes.length > 0 ? p.sale_modes[0] : null;
+          const rawAmount = firstMode && firstMode.prices && firstMode.prices.length > 0 ? firstMode.prices[0].amount : null;
+          return {
+            id: p.id,
+            brand: p.brand ? p.brand.name : 'GENÉRICO',
+            name: p.name,
+            price: rawAmount !== null ? `$${Number(rawAmount).toLocaleString('es-AR')}` : 'Consultar',
+            numericPrice: rawAmount !== null ? Number(rawAmount) : 0,
+            saleModeId: firstMode?.id || 1,
+            saleMode: firstMode ? firstMode.type : 'Unidad',
+            imageUrl: p.images && p.images.length > 0 ? p.images[0].url : '',
+            isExclusive: true,
+          };
+        });
         setProducts(formattedProducts);
         setTotalCount(typeof data.count === 'number' ? data.count : formattedProducts.length);
       })
-      .catch(err => console.error("Error conectando a Django:", err));
+      .catch(err => {
+        console.error("Error conectando a Django:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [selectedCategory, ordering]);
 
   return (
-    <main style={{ padding: '2rem 4rem', maxWidth: '1200px', margin: '0 auto' }}>
+    <main style={{ padding: '2rem 4rem', maxWidth: '1280px', margin: '0 auto' }}>
       
-      <header style={{ marginBottom: '3rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '2rem' }}>
+      <header style={{ marginBottom: '2.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '2rem' }}>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Inicio / <span style={{ color: 'var(--accent-gold)' }}>Catálogo Público</span>
         </p>
         <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Colección de Grandes Reservas</h1>
-        <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', lineHeight: '1.6' }}>
-          Descubra obras maestras embotelladas. Cosechas excepcionales, vinos de autor seleccionados
-          meticulosamente por nuestro panel de expertos sumilleres.
+        <p style={{ color: 'var(--text-secondary)', maxWidth: '640px', lineHeight: '1.6' }}>
+          Descubra obras maestras embotelladas y delicatessen. Seleccione sus productos por unidad o por caja para armar su solicitud de pedido.
         </p>
       </header>
 
       <div className="main-layout">
-        {/* Pasamos la función para cambiar la categoría al sidebar */}
-        <FilterSidebar onCategoryChange={setSelectedCategory} currentCategory={selectedCategory} />
+        <FilterSidebar onCategoryChange={handleCategoryChange} currentCategory={selectedCategory} />
         
         <section style={{ flexGrow: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Mostrando <strong style={{color: 'white'}}>{products.length}</strong> de <strong style={{color: 'white'}}>{totalCount}</strong> joyas seleccionadas</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+              Mostrando <strong style={{ color: 'white' }}>{products.length}</strong> de <strong style={{ color: 'white' }}>{totalCount}</strong> joyas seleccionadas
+            </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Ordenar por:</span>
               <select
                 value={ordering}
-                onChange={(e) => setOrdering(e.target.value)}
+                onChange={(e) => handleOrderingChange(e.target.value)}
                 style={{
                   background: 'transparent',
                   color: 'white',
                   border: '1px solid var(--border-color)',
-                  padding: '0.3rem 0.6rem',
+                  padding: '0.45rem 0.75rem',
+                  minHeight: '40px',
                   fontSize: '0.85rem',
                   cursor: 'pointer',
                 }}
@@ -99,8 +122,11 @@ export default function Home() {
             </div>
           </div>
           
-          {/* Pasamos los productos traídos de la API a la grilla */}
-          <ProductGrid products={products} />
+          {loading ? (
+            <p style={{ color: 'var(--text-secondary)', padding: '2rem 0' }}>Cargando productos de la base de datos...</p>
+          ) : (
+            <ProductGrid products={products} />
+          )}
         </section>
       </div>
 
