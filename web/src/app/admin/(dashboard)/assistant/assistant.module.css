@@ -627,3 +627,161 @@
     flex-direction: column;
   }
 }
+
+/* ==========================================================================
+   Clases extraídas de los antiguos style={{}} inline de assistant/page.tsx
+   ========================================================================== */
+.inlineRow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.spaceBetween {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.emptyText {
+  font-size: 0.76rem;
+  color: #71717a;
+  padding: 0.25rem 0;
+}
+
+.helperText {
+  font-size: 0.75rem;
+  color: #52525b;
+  line-height: 1.4;
+}
+
+.stackForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.sessionSelectBtn {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.sessionDeleteBtn {
+  background: none;
+  border: none;
+  color: #71717a;
+  cursor: pointer;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.35rem;
+}
+
+.sessionDeleteBtn:hover {
+  color: #dc2626;
+}
+
+.capacityList {
+  font-size: 0.76rem;
+  color: #27272a;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.capacityRow {
+  display: flex;
+  justify-content: space-between;
+}
+
+.topBarInfo {
+  min-width: 0;
+}
+
+.topBarEyebrow {
+  font-size: 0.68rem;
+  color: #a1a1aa;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.topBarTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sectionLabel {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: #27272a;
+  text-transform: uppercase;
+}
+
+.chipArrow {
+  color: #71717a;
+  font-size: 0.75rem;
+}
+
+.bubbleAuthor {
+  color: #18181b;
+  font-size: 0.84rem;
+}
+
+.textBlock {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: #18181b;
+}
+
+.headerLink {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #3f3f46;
+  text-decoration: underline;
+}
+
+.orderNumber {
+  color: #18181b;
+}
+
+.orderAmount {
+  font-weight: 700;
+  color: #27272a;
+}
+
+.orderMeta {
+  color: #52525b;
+  font-size: 0.73rem;
+}
+
+.detailLink {
+  font-size: 0.7rem;
+  color: #52525b;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.detailLink:hover {
+  text-decoration: underline;
+}
+
+/* El contenedor ya separa con gap: la alerta global no necesita margen propio */
+.pageContainer > :global(.admin-alert) {
+  margin-bottom: 0;
+}

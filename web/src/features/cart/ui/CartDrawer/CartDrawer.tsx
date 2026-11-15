@@ -1,22 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useCartUI } from '../../context/CartUIContext';
+import CartItemList from './CartItemList';
+import CartCheckoutForm from './CartCheckoutForm';
+import CartConfirmationView, { CreatedOrderResponse } from './CartConfirmationView';
 import styles from './CartDrawer.module.css';
-
-interface CreatedOrderResponse {
-  id: string;
-  orderNumber: string;
-  status: string;
-  totalAmount: number;
-  customer: {
-    name: string;
-    email: string;
-    phone: string;
-    shippingAddress: string;
-  };
-}
 
 export default function CartDrawer() {
   const {
@@ -159,7 +148,7 @@ export default function CartDrawer() {
           </button>
         </header>
 
-        {/* Barra de Pasos / Wizard (Ley de Hick) */}
+        {/* Barra de Pasos / Wizard */}
         <nav className={styles.wizardBar} aria-label="Pasos de la solicitud de pedido">
           <button
             type="button"
@@ -184,228 +173,37 @@ export default function CartDrawer() {
           </button>
         </nav>
 
-        {/* Cuerpo dinámico */}
+        {/* Cuerpo dinámico modularizado */}
         <div className={styles.body}>
           {activeStep === 'cart' && (
-            <>
-              {items.length === 0 ? (
-                <div className={styles.templateNotice}>
-                  <span className={styles.templateNoticeStrong}>
-                    Tu solicitud aún no tiene productos seleccionados
-                  </span>
-                  Explorá el catálogo público de vinos, licores y delicatessen y presioná{' '}
-                  <strong>&quot;Agregar a Solicitud&quot;</strong> para cargar productos reales de la base de datos.
-                  <div style={{ marginTop: '1rem' }}>
-                    <Link
-                      href="/catalogo"
-                      onClick={closeCart}
-                      className={styles.ctaPrimary}
-                      style={{ textDecoration: 'none' }}
-                    >
-                      Ir al Catálogo de Productos →
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.itemList}>
-                  {items.map((item) => (
-                    <article key={item.key} className={styles.cartItemCard}>
-                      <div className={styles.itemThumbPlaceholder} style={{ padding: 0, overflow: 'hidden', borderStyle: 'solid' }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={item.imageUrl || 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=300&auto=format&fit=crop'}
-                          alt={item.productName}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-
-                      <div className={styles.itemInfo}>
-                        <span className={styles.itemBrand}>{item.brandName}</span>
-                        <h3 className={styles.itemTitle}>{item.productName}</h3>
-                        <p className={styles.itemMeta}>Modalidad: {item.saleModeType}</p>
-                        <p className={styles.itemMeta} style={{ color: 'var(--color-gold)' }}>
-                          ${item.unitPrice.toLocaleString('es-AR')} c/u · Subtotal: $
-                          {(item.unitPrice * item.quantity).toLocaleString('es-AR')}
-                        </p>
-
-                        <div className={styles.itemControlsRow}>
-                          <div className={styles.qtyGroup} aria-label="Selector de cantidad">
-                            <button
-                              type="button"
-                              onClick={() => updateQuantity(item.key, item.quantity - 1)}
-                              className={styles.qtyBtn}
-                              aria-label="Disminuir cantidad"
-                            >
-                              −
-                            </button>
-                            <span className={styles.qtyValue}>{item.quantity}</span>
-                            <button
-                              type="button"
-                              onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                              className={styles.qtyBtn}
-                              aria-label="Aumentar cantidad"
-                            >
-                              +
-                            </button>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => removeItem(item.key)}
-                            className={styles.removeBtn}
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </>
+            <CartItemList
+              items={items}
+              onUpdateQuantity={updateQuantity}
+              onRemoveItem={removeItem}
+              onCloseCart={closeCart}
+            />
           )}
 
           {activeStep === 'checkout' && (
-            <>
-              <div className={styles.templateNotice}>
-                <span className={styles.templateNoticeStrong}>
-                  📌 Solicitud sin cobro automático (Conectado a POST /api/orders)
-                </span>
-                Tu pedido se guardará en <strong>Cloud Firestore</strong> con estado inicial <code>PENDIENTE</code> para
-                que el personal verifique disponibilidad física en cava.
-              </div>
-
-              {submitError && (
-                <div
-                  role="alert"
-                  style={{
-                    padding: '0.85rem 1rem',
-                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                    border: '1px solid #ef4444',
-                    color: '#fca5a5',
-                    fontSize: '0.82rem',
-                    borderRadius: '4px',
-                  }}
-                >
-                  ⚠️ {submitError}
-                </div>
-              )}
-
-              <form
-                id="checkout-order-form"
-                onSubmit={handleCheckoutSubmit}
-                style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-              >
-                <div className={styles.formGroup}>
-                  <label htmlFor="req-name" className={styles.label}>
-                    Nombre y Apellido Completo *
-                  </label>
-                  <input
-                    id="req-name"
-                    type="text"
-                    required
-                    minLength={3}
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className={styles.input}
-                    placeholder="Ej: Agustín Del Grecco"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="req-email" className={styles.label}>
-                    Correo Electrónico *
-                  </label>
-                  <input
-                    id="req-email"
-                    type="email"
-                    required
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    className={styles.input}
-                    placeholder="Ej: cliente@correo.com"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="req-phone" className={styles.label}>
-                    Teléfono / WhatsApp de Contacto *
-                  </label>
-                  <input
-                    id="req-phone"
-                    type="tel"
-                    required
-                    minLength={6}
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    className={styles.input}
-                    placeholder="Ej: +54 9 362 400-0000"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="req-notes" className={styles.label}>
-                    Dirección de Entrega o Notas de Retiro en Cava *
-                  </label>
-                  <textarea
-                    id="req-notes"
-                    rows={3}
-                    required
-                    minLength={5}
-                    value={shippingAddress}
-                    onChange={(e) => setShippingAddress(e.target.value)}
-                    className={styles.textarea}
-                    placeholder="Ej: Retiro en Julio A. Roca esq. Echeverría o dirección de envío..."
-                  />
-                </div>
-              </form>
-            </>
+            <CartCheckoutForm
+              customerName={customerName}
+              setCustomerName={setCustomerName}
+              customerEmail={customerEmail}
+              setCustomerEmail={setCustomerEmail}
+              customerPhone={customerPhone}
+              setCustomerPhone={setCustomerPhone}
+              shippingAddress={shippingAddress}
+              setShippingAddress={setShippingAddress}
+              submitError={submitError}
+              onSubmit={handleCheckoutSubmit}
+            />
           )}
 
           {activeStep === 'confirmation' && (
-            <div className={styles.confirmationBox}>
-              <span className={styles.eyebrow}>✓ Solicitud Registrada en Cloud Firestore</span>
-              <h3 className={styles.title} style={{ fontSize: '1.35rem' }}>
-                {createdOrder
-                  ? '¡Tu solicitud de pedido fue enviada con éxito!'
-                  : '[Aquí se mostrará la confirmación tras enviar tu solicitud]'}
-              </h3>
-
-              <div className={styles.orderCodeBadge}>
-                {createdOrder ? createdOrder.orderNumber : '[Código de Seguimiento: ej. ORD-2026-0001]'}
-              </div>
-
-              <div className={styles.templateNotice} style={{ textAlign: 'left' }}>
-                <span className={styles.templateNoticeStrong}>
-                  Estado Inicial: ● {createdOrder ? createdOrder.status : 'PENDIENTE'}
-                </span>
-                {createdOrder ? (
-                  <>
-                    • <strong>Cliente:</strong> {createdOrder.customer.name} ({createdOrder.customer.phone})
-                    <br />• <strong>Entrega / Notas:</strong> {createdOrder.customer.shippingAddress}
-                    <br />• <strong>Total Calculado en Servidor:</strong> $
-                    {Number(createdOrder.totalAmount).toLocaleString('es-AR')}
-                  </>
-                ) : (
-                  <>
-                    • Revisá el estado de tu pedido o buscá cualquiera de las órdenes cargadas en la base de datos desde la pantalla de seguimiento.
-                  </>
-                )}
-              </div>
-
-              <Link
-                href={
-                  createdOrder
-                    ? `/seguimiento?order=${encodeURIComponent(createdOrder.orderNumber)}`
-                    : '/seguimiento'
-                }
-                onClick={closeCart}
-                className={styles.ctaPrimary}
-                style={{ marginTop: '0.5rem', textDecoration: 'none' }}
-              >
-                Consultar Seguimiento de Pedido →
-              </Link>
-            </div>
+            <CartConfirmationView
+              createdOrder={createdOrder}
+              onCloseCart={closeCart}
+            />
           )}
         </div>
 
@@ -419,7 +217,7 @@ export default function CartDrawer() {
               </div>
               <div className={styles.summaryRow}>
                 <span className={styles.summaryTotal}>Total Estimado</span>
-                <span className={styles.summaryTotal} style={{ color: 'var(--color-gold)' }}>
+                <span className={`${styles.summaryTotal} ${styles.summaryTotalGold}`}>
                   ${totalAmount.toLocaleString('es-AR')}
                 </span>
               </div>
@@ -428,7 +226,6 @@ export default function CartDrawer() {
                 className={styles.ctaPrimary}
                 disabled={items.length === 0}
                 onClick={() => setStep('checkout')}
-                style={{ opacity: items.length === 0 ? 0.5 : 1 }}
               >
                 Continuar con Datos de Contacto →
               </button>
