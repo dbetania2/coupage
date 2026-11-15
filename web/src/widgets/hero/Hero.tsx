@@ -31,7 +31,7 @@ export default function Hero() {
           </p>
 
           <div className={styles.actions}>
-            <Link href="/catalogo" style={{ textDecoration: 'none' }}>
+            <Link href="/catalogo" className={styles.ctaLink}>
               <Button variant="primary" size="md">
                 EXPLORAR CATÁLOGO <span className={styles.arrow}>→</span>
               </Button>

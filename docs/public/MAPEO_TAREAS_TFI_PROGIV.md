@@ -43,75 +43,152 @@ _Estado: Planificado para ejecución inmediata. Foco en flujo de checkout sin co
 
 ---
 
-### Bloque 1: Infraestructura y Setup Base
+### Bloque 1: Infraestructura y Setup Base (Backend Node.js)
 
-#### 🔹 [T14] Creación y Configuración del Proyecto Firebase en Cloud
+#### 🔹 [T14] Configuración de Firebase Cloud Firestore y Gestión de Entorno Seguro
 - **Tipo:** Infraestructura / Cloud | **Prioridad:** Alta | **Estimación:** 1 SP
-- **Descripción:** Crear el proyecto `coupage` en la consola de Firebase, habilitar la base de datos Cloud Firestore en la región multirregión adecuada, generar la clave privada de Service Account (`serviceAccountKey.json`) y configurar la plantilla de entorno.
+- **Fundamentación Teórica Prog IV:** Capítulo 4.1 (*Gestión de Entornos e Infraestructura: On-Premises vs Cloud IaaS/SaaS*) y Capítulo 4.2 (*Modelos de Base de Datos Documentales NoSQL vs Relacionales*).
+- **Descripción:** Configuración del proyecto `coupage` en Google Cloud / Firebase Firestore bajo el modelo de base de datos documental multirregión. Implementación del aislamiento estricto de credenciales de la cuenta de servicio (`Service Account`), garantizando que ninguna clave privada quede expuesta en el historial de Git y permitiendo la ejecución tanto en entornos de desarrollo local como en contenedores Docker de despliegue (Render / Cloud Run).
 - **Criterios de Aceptación:**
-  - [x] Proyecto Firebase creado y Cloud Firestore activo con reglas de seguridad iniciales.
-  - [x] Clave privada de Service Account generada y resguardada (sin commitear al repo).
-  - [x] `.gitignore` verificado para ignorar `*serviceAccountKey*.json` y credenciales.
-  - [x] `orders-api/.env.example` actualizado con `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` y `FIREBASE_PRIVATE_KEY`.
+  - [x] Proyecto Firebase creado con Cloud Firestore en modo nativo activo.
+  - [x] Clave privada `serviceAccountKey.json` excluida taxativamente en `.gitignore`.
+  - [x] Plantilla `orders-api/.env.example` actualizada con todas las variables requeridas (`PORT`, `NODE_ENV`, `FRONTEND_URL`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`).
+  - [ ] **Validación Estricta de Entorno al Arrancar (ProgIV 4.3):** El archivo `src/config/environment.js` debe verificar con un esquema o lista blanca que todas las variables existan. Si falta alguna, el proceso imprime en consola qué variable falta exactamente y termina inmediatamente con `process.exit(1)` (Fallo cerrado; el servidor jamás arranca a medias).
+- **Demostración para Defensa / Tests:**
+  1. Eliminar temporalmente `FIREBASE_PROJECT_ID` del archivo `.env` y ejecutar `npm start`.
+  2. Verificar que el proceso imprime `[FATAL] Variable de entorno faltante: FIREBASE_PROJECT_ID` y finaliza con código de salida `1`.
 
-#### 🔹 [T15] Conexión e Inicialización del SDK de Firebase en `orders-api`
+#### 🔹 [T15] Conexión de Firebase Admin SDK, Probes de Salud y Apagado Ordenado (*Graceful Shutdown*)
 - **Tipo:** Backend (Node.js) | **Prioridad:** Alta | **Estimación:** 2 SP | **Depende de:** T14
-- **Descripción:** Integrar el SDK oficial `firebase-admin` en Node.js, crear el módulo `orders-api/config/firebase.js` que lea las variables de entorno de forma segura (normalizando saltos de línea de la clave privada) y exponer endpoints `/health` y `/ready` de diagnóstico.
+- **Fundamentación Teórica Prog IV:** Capítulo 3.1 (*Arquitectura del Event Loop y Ciclo de Vida del Proceso*), Capítulo 4.2 (*Singleton en Firebase Admin SDK*) y Requisito Obligatorio ProgIV 4.3.
+- **Descripción:** Instanciar el cliente `firebase-admin` bajo el patrón Singleton en `src/config/firebase.js`, incorporando la normalización defensiva de saltos de línea para claves privadas en formato PEM multilínea (`.replace(/\\n/g, '\n')`). Exponer probes de orquestación desacoplados (`/health` y `/ready`) y garantizar el ciclo de vida del proceso Node.js ante señales del sistema operativo (`SIGTERM` / `SIGINT`).
 - **Criterios de Aceptación:**
-  - [x] Paquete `firebase-admin` instalado en `orders-api/package.json`.
-  - [x] Conexión singleton exportando la instancia de Firestore (`db`).
-  - [x] Endpoints `GET /health` y `GET /ready` responden `HTTP 200` confirmando conexión activa con Firestore.
+  - [x] Singleton `db` de Firestore exportado para desacoplamiento en adaptadores de persistencia.
+  - [x] **Liveness Probe (`GET /health`):** Retorna `HTTP 200 OK` con `{ status: 'ok', uptime: process.uptime() }` indicando que el Event Loop de Node.js no está bloqueado.
+  - [x] **Readiness Probe (`GET /ready`):** Ejecuta una consulta mínima de lectura a Firestore (`db.collection('orders').limit(1).get()`); retorna `HTTP 200` si la base está accesible o `HTTP 503 Service Unavailable` si Firestore está caído.
+  - [ ] **Apagado Ordenado (*Graceful Shutdown* - ProgIV 4.3):** Captura de señales `SIGTERM` y `SIGINT` en `src/servidor.js`. El servidor debe dejar de aceptar peticiones nuevas (`server.close()`), permitir hasta 10 segundos para que las peticiones HTTP activas finalicen, y luego salir limpiamente con `process.exit(0)`.
+  - [ ] **Manejo Defensivo Global de Excepciones:** Registrar listeners para `process.on('unhandledRejection')` y `process.on('uncaughtException')` evitando que promesas huérfanas cuelguen el proceso en silencio.
+- **Demostración para Defensa / Tests:**
+  ```bash
+  # 1. Probar Liveness y Readiness
+  curl -i http://localhost:3000/health
+  curl -i http://localhost:3000/ready
+  # 2. Prueba de Graceful Shutdown:
+  kill -s SIGTERM $(lsof -t -i:3000)
+  ```
 
-#### 🔹 [T16] Configuración de CORS y Seguridad en `orders-api`
+#### 🔹 [T16] Seguridad en API: CORS Estricto, Headers de Idempotencia y Sanitización Defensiva
 - **Tipo:** Backend / Seguridad | **Prioridad:** Crítica | **Estimación:** 1 SP
-- **Descripción:** Configurar el middleware `cors` en Express restringido al origen de la aplicación web (`http://localhost:3001` y dominios de despliegue), permitiendo métodos `GET`, `POST`, `PATCH`, `OPTIONS` y encabezados de autorización.
+- **Fundamentación Teórica Prog IV:** Capítulo 6.1 (*Seguridad Web: CORS, Rate Limiting y Sanitización*) y Requisito Obligatorio ProgIV 4.6 (*Idempotencia y Prevención de Doble Posteo*).
+- **Descripción:** Configurar la capa de seguridad HTTP en Express restringiendo los orígenes cruzados a la interfaz autorizada, habilitando la cabecera personalizada `Idempotency-Key` requerida por el estándar de pagos/pedidos, y sanitizando las entradas contra inyecciones NoSQL y Prototype Pollution.
 - **Criterios de Aceptación:**
-  - [ ] Peticiones desde el frontend en puerto 3001 no sufren bloqueos de Cross-Origin.
-  - [ ] Headers `Content-Type` y `Authorization` habilitados explícitamente.
+  - [x] Middleware `cors` configurado con lista blanca (`http://localhost:3001`, `127.0.0.1:3001` y dominios en `FRONTEND_URL`).
+  - [x] Métodos `GET`, `POST`, `PATCH`, `DELETE`, `OPTIONS` permitidos explícitamente.
+  - [ ] **Habilitación de Cabeceras Seguras:** Configurar `allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key', 'x-correlation-id']`. Las solicitudes pre-flight `OPTIONS` deben responder `HTTP 204 No Content` sin bloqueos en el navegador.
+  - [ ] **Middleware de Idempotencia (ProgIV 4.6 y 5.5):** En `POST /api/orders`, si el cliente envía `Idempotency-Key: <UUID>`, el servidor guarda la respuesta en memoria/Firestore. Si el cliente reenvía exactamente la misma petición con la misma clave dentro de los 5 minutos (por ejemplo, por doble clic del usuario o microcorte de red), el backend devuelve la respuesta almacenada con `HTTP 200/201` sin crear un pedido duplicado en Firestore.
+  - [ ] **Protección contra Prototype Pollution (ProgIV 1.3 y 2.1):** Rechazar cualquier payload JSON en `req.body` que contenga claves peligrosas como `__proto__`, `constructor` o `prototype`.
+- **Demostración para Defensa / Tests:**
+  ```bash
+  curl -X OPTIONS http://localhost:3000/api/orders \
+    -H "Origin: http://localhost:3001" \
+    -H "Access-Control-Request-Method: POST" \
+    -H "Access-Control-Request-Headers: Idempotency-Key, Content-Type" -i
+  ```
 
 ---
 
-### Bloque 2: Lógica de Negocio y Endpoints (Backend Node.js)
+### Bloque 2: Lógica de Negocio, Dominio y Endpoints (Backend Node.js)
 
-#### 🔹 [T17] Endpoint de Creación de Solicitudes de Pedido (`POST /orders`)
-- **Historia Padre:** HU3 (Envío de Solicitud de Pedido) | **Tipo:** Backend | **Estimación:** 3 SP | **Depende de:** T15
-- **Descripción:** Desarrollar el endpoint `POST /api/orders` en Express con validación de esquema con Joi. Guarda el documento en la colección `orders` de Firestore con estado inicial `PENDIENTE` y estructura de snapshot.
+#### 🔹 [T17] Endpoint de Creación de Pedidos (`POST /api/orders`) y Snapshot de Precios del Servidor
+- **Historia Padre:** HU3 (Envío de Solicitud de Pedido) | **Tipo:** Backend (Node.js) | **Estimación:** 3 SP | **Depende de:** T15, T16
+- **Fundamentación Teórica Prog IV:** Capítulo 4.3 (*Arquitectura Hexagonal: Entidades y Casos de Uso*) y Requisito Obligatorio ProgIV 5.5 (*Cálculo Estricto de Precios en el Servidor*).
+- **Descripción:** Construir el caso de uso `CrearPedido.js` y el endpoint `POST /api/orders` en Express. La creación debe aplicar validación de esquema exhaustiva con Joi, aplicar la regla de snapshot de precio inmutable (donde el backend calcula o valida los precios oficiales ignorando alteraciones maliciosas enviadas por el navegador), y persistir el documento en Firestore con estado inicial `PENDIENTE` y su correspondiente evento de auditoría.
 - **Reglas de Negocio:**
   - Mínimo 1 producto en el carrito con cantidad $> 0$.
   - Datos de contacto obligatorios: Nombre completo, Email válido, Teléfono y Dirección o notas de entrega.
-  - Snapshot de precio: guarda el precio unitario y calcula el `total_amount` en el servidor.
+  - Snapshot de precio: guarda el precio unitario oficial y calcula el `total_amount` en el servidor.
 - **Criterios de Aceptación:**
-  - [ ] Valida el cuerpo de la petición con Joi arrojando `HTTP 400 Bad Request` ante datos inválidos.
-  - [ ] Crea el documento en Firestore asignando ID único, estado inicial `PENDIENTE` y evento inicial en `history`.
-  - [ ] Responde `HTTP 201 Created` con el ID de pedido generado y esquema documentado en Swagger UI.
+  - [x] Validación de estructura con Joi (`orderValidator.js`): datos del comprador e ítems. Ante fallas, responde `HTTP 400 Bad Request` sin procesar.
+  - [ ] **Invariante de Precios Calculados en el Servidor (ProgIV 5.5):** El backend no confía ciegamente en el campo `price` o `unitPrice` del payload. Si un atacante envía `unitPrice: 0.01`, el servidor calcula el subtotal con el precio oficial registrado en catálogo y emite el `totalAmount` correcto.
+  - [x] **Snapshot Inmutable:** Cada ítem se persiste con `{ productId, productName, unitPrice, quantity, subtotal }` congelando el valor exacto al momento de la orden.
+  - [x] **Auditoría Inicial:** Se inicializa el array `history` con el evento `[{ status: 'PENDIENTE', timestamp: Date, note: 'Solicitud de pedido creada en checkout', author: customer.email }]`.
+  - [x] **Respuesta HTTP:** Devuelve `HTTP 201 Created` con el ID único asignado por Firestore, el `orderNumber` autogenerado y el objeto completo.
+- **Demostración para Defensa / Tests:**
+  ```bash
+  curl -X POST http://localhost:3000/api/orders -H "Content-Type: application/json" -d '{
+    "customer": {"name": "Test Hacker", "email": "hacker@test.com", "phone": "1122334455", "shippingAddress": "Calle Falsa 123"},
+    "items": [{"productId": 1, "saleModeId": 1, "productName": "Rutini Cabernet Malbec", "unitPrice": 0.01, "quantity": 2}]
+  }'
+  ```
 
-#### 🔹 [T18] Endpoints de Listado y Transición de Estados (`GET` y `PATCH /orders`)
-- **Historia Padre:** HU4 (Gestión y Trazabilidad) | **Tipo:** Backend | **Estimación:** 3 SP | **Depende de:** T15
-- **Descripción:** Crear `GET /api/orders` para listar todas las solicitudes ordenadas cronológicamente con soporte de filtros por estado, y `PATCH /api/orders/:id/status` para ejecutar transiciones de estado controladas.
+#### 🔹 [T18] Endpoints de Listado y Transición de Estados (`GET` y `PATCH /orders`) con FSM Estricta
+- **Historia Padre:** HU4 (Gestión y Trazabilidad) | **Tipo:** Backend (Node.js) | **Estimación:** 3 SP | **Depende de:** T15, T17
+- **Fundamentación Teórica Prog IV:** Capítulo 5.2 (*Clases Personalizadas de Error y Transición de Estados*) y Requisito Obligatorio ProgIV 4.4 y 5.5 (*Máquina de Estados Finita y Auditoría Inmutable*).
+- **Descripción:** Implementar la gestión del ciclo de vida del pedido mediante dos endpoints: `GET /api/orders` con soporte de filtrado dinámico por estado, y `PATCH /api/orders/:id/status` para transiciones de estado gobernadas por la Máquina de Estados Finita (FSM) de la entidad `Order.js`. Toda transición debe ser atómica y registrar un evento inmutable en el historial.
 - **Reglas de Negocio:**
   - Transiciones válidas: `PENDIENTE` $\to$ `CONFIRMADO` $\to$ `PREPARADO` $\to$ `ENTREGADO`.
   - Cancelación: Solo permitida desde `PENDIENTE` o `CONFIRMADO` hacia `RECHAZADO` o `CANCELADO`.
-  - Cualquier intento de transición inválida (ej. `ENTREGADO` $\to$ `PENDIENTE`) responde `HTTP 422 Unprocessable Entity`.
+  - Estados terminales: `ENTREGADO`, `RECHAZADO`, `CANCELADO` (inmutables).
+  - Cualquier intento de transición inválida responde `HTTP 422 Unprocessable Entity`.
 - **Criterios de Aceptación:**
-  - [ ] `GET /api/orders` devuelve el listado ordenado descendentemente por `createdAt`.
-  - [ ] Soporte para query parameter `?status=PENDIENTE`.
-  - [ ] `PATCH /api/orders/:id/status` actualiza el estado y añade un registro atómico al array `history`.
+  - [x] `GET /api/orders` devuelve el listado ordenado descendentemente por `createdAt`.
+  - [x] Soporte para query parameter `?status=PENDIENTE`.
+  - [ ] **Caso de Uso `CambiarEstadoPedido.js`:**
+    1. Recupera el pedido por ID (`FirestoreOrderRepository.obtenerPorId`). Arroja `HTTP 404` si no existe.
+    2. Invoca el método de dominio `order.cambiarEstado(nuevoEstado, autor, nota)`.
+    3. Si la transición no está permitida, arroja `TransicionInvalidaError` que el middleware traduce a **`HTTP 422 Unprocessable Entity`**.
+  - [ ] **Persistencia y Atomicidad en Firestore:** Implementar `actualizarEstado(id, nuevoEstado, eventoHistorial)` usando `FieldValue.arrayUnion()` o `runTransaction()` para evitar carreras.
+  - [ ] **Middleware de Validación Joi:** Validar que el body contenga `{ status, note, author }`.
+  - [ ] **Documentación OpenAPI / Swagger:** Registrar `PATCH /api/orders/{id}/status` en `orderRoutes.js`.
+- **Demostración para Defensa / Tests:**
+  ```bash
+  # Transición legal (HTTP 200)
+  curl -X PATCH http://localhost:3000/api/orders/ID_DOC/status -H "Content-Type: application/json" \
+    -d '{"status": "CONFIRMADO", "note": "Stock en cava verificado", "author": "admin@coupage.com"}'
+  # Transición ilegal: saltar directo a ENTREGADO sin pasar por PREPARADO (HTTP 422)
+  ```
 
 #### 🔹 [T19] Script de Datos Semilla para Pedidos de Prueba (`seed.js`)
 - **Tipo:** Backend / DevOps | **Prioridad:** Media | **Estimación:** 1 SP | **Depende de:** T15
-- **Descripción:** Crear un script de inicialización para poblar Firestore con un lote de 5 pedidos de ejemplo distribuidos en los distintos estados (`PENDIENTE`, `CONFIRMADO`, `PREPARADO`, `ENTREGADO`, `CANCELADO`) con historiales de trazabilidad creíbles.
+- **Fundamentación Teórica Prog IV:** Requisito Obligatorio ProgIV 4.1 (*Scripts de npm para carga de datos de prueba*).
+- **Descripción:** Crear e instrumentar un script de inicialización para poblar Firestore con un lote de 5 pedidos de ejemplo distribuidos en los distintos estados (`PENDIENTE`, `CONFIRMADO`, `PREPARADO`, `ENTREGADO`, `CANCELADO`) con historiales de trazabilidad creíbles y precios representativos.
 - **Criterios de Aceptación:**
-  - [x] Comando `npm run seed` ejecutable desde `orders-api/`.
-  - [x] Permite que cualquier desarrollador levante el panel administrativo y vea datos reales sin ingresar compras manualmente.
+  - [x] Archivo `orders-api/seed.js` implementado con lote de pedidos realistas de Coupage.
+  - [x] Cada pedido incluye un historial coherente de auditoría con fechas creíbles en `history`.
+  - [x] Comando `npm run seed` ejecutable desde `orders-api/` y documentado.
+  - [x] Permite que cualquier desarrollador o evaluador levante el panel administrativo y vea datos reales sin ingresar compras manualmente.
+- **Demostración para Defensa / Tests:**
+  ```bash
+  npm --prefix orders-api run seed
+  ```
 
-#### 🔹 [T20] Pruebas Unitarias y de Integración en `orders-api`
-- **Tipo:** Backend / Testing | **Prioridad:** Media | **Estimación:** 2 SP | **Depende de:** T17, T18
-- **Descripción:** Implementar suite de pruebas automatizadas con Jest y Supertest cubriendo los flujos críticos de la API de pedidos.
+#### 🔹 [T20] Suite de Pruebas Automatizadas en 3 Niveles (Dominio, Integración y Concurrencia)
+- **Tipo:** Backend / Testing | **Prioridad:** Alta | **Estimación:** 2 SP | **Depende de:** T17, T18
+- **Fundamentación Teórica Prog IV:** Requisito Obligatorio ProgIV 4.8 (*Tests en Tres Niveles con Comando Único*) y Capítulo 5.2.
+- **Descripción:** Implementar una suite de pruebas automatizadas con el runner nativo `node:test`, `node:assert/strict` y `supertest` cubriendo los 3 niveles requeridos por la cátedra en `orders-api/tests/`: Unitarios de dominio/FSM, Integración de endpoints HTTP y Seguridad/Idempotencia.
 - **Criterios de Aceptación:**
-  - [ ] Test de creación exitosa de pedido (`POST /orders` $\to$ 201).
-  - [ ] Test de validación fallida por carrito vacío o email inválido (`POST /orders` $\to$ 400).
-  - [ ] Test de máquina de estados: valida transición permitida (200) y transición prohibida (422).
-  - [ ] Comando `npm test` configurado en `orders-api/package.json`.
+  - [ ] **Nivel 1: Tests de Dominio (`tests/dominio/Order.test.js`):**
+    - Rechaza carritos vacíos o cantidades $\le 0$.
+    - Nace en `PENDIENTE` con evento inicial en `history`.
+    - Valida transiciones permitidas y arroja `TransicionInvalidaError` ante transiciones prohibidas o sobre estados terminales.
+    - Ejecución pura en memoria sin base de datos ni servidor HTTP.
+  - [ ] **Nivel 2: Tests de Integración HTTP (`tests/integracion/orders.test.js`):**
+    - `POST /api/orders` con datos válidos $\to$ `HTTP 201 Created`.
+    - `POST /api/orders` con payload inválido $\to$ `HTTP 400 Bad Request`.
+    - `GET /api/orders` $\to$ `HTTP 200 OK` con listado.
+    - `GET /api/orders?status=PENDIENTE` $\to$ filtra correctamente.
+    - `PATCH /api/orders/:id/status` válido $\to$ `HTTP 200 OK`.
+    - `PATCH /api/orders/:id/status` inválido $\to$ `HTTP 422 Unprocessable Entity`.
+  - [ ] **Nivel 3: Tests de Seguridad e Idempotencia (`tests/seguridad/orders-security.test.js`):**
+    - Compra con precio manipulado (`unitPrice: 0.01`): comprueba que el servidor recalcula el total oficial.
+    - Doble posteo con misma `Idempotency-Key`: comprueba que no duplica el documento en Firestore.
+    - Prototype Pollution: comprueba el rechazo ante cargas que contengan `__proto__`.
+  - [ ] **Comando Único de Ejecución:**
+    - Configurado `"test": "node --test tests/**/*.test.js test/*.test.js"` en `orders-api/package.json` para correr con `npm test`.
+- **Demostración para Defensa / Tests:**
+  ```bash
+  npm --prefix orders-api test
+  ```
 
 ---
 

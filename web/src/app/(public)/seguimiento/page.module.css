@@ -178,3 +178,68 @@
   }
 }
 
+.goldHighlight {
+  color: var(--color-gold);
+}
+
+.whiteHighlight {
+  color: #ffffff;
+}
+
+.primaryText {
+  color: var(--color-text-primary);
+}
+
+.secondaryText {
+  color: var(--color-text-secondary);
+}
+
+.recentChipsRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.recentChipsLabel {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.recentChipBtn {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  background-color: var(--color-bg-base);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-gold);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.recentChipBtn:hover {
+  background-color: var(--color-gold-muted);
+}
+
+.stateNameText {
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+}
+
+.terminalAlert {
+  margin-top: 1rem;
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+.itemsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.headingNoMargin {
+  margin-bottom: 0;
+}
+
+

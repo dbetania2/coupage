@@ -42,28 +42,36 @@ export function CartUIProvider({ children }: { children: React.ReactNode }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeStep, setActiveStep] = useState<CartStep>('cart');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window === 'undefined') return [];
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Cargar carrito desde localStorage después de hidratar en el cliente
+  useEffect(() => {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setItems(parsed);
+        }
       }
     } catch {
       // Ignorar errores de lectura de localStorage
+    } finally {
+      setHydrated(true);
     }
-    return [];
-  });
+  }, []);
 
-  // Sincronizar con localStorage cuando cambian los ítems
+  // Sincronizar con localStorage cuando cambian los ítems tras hidratar
   useEffect(() => {
+    if (!hydrated) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch {
       // Ignorar errores de almacenamiento
     }
-  }, [items]);
+  }, [items, hydrated]);
 
   const openCart = useCallback((initialStep: CartStep = 'cart') => {
     setActiveStep(initialStep);

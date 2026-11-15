@@ -8,6 +8,7 @@ import {
   getStatusMeta,
   toDate,
 } from '@/features/orders/useOrders';
+import { AdminPageHeader, AdminAlert } from '@/shared/ui/admin';
 
 // Escritorio original (diseño Figma) conectado a orders-api (GET /api/orders → Firestore)
 export default function AdminDashboardPage() {
@@ -51,28 +52,17 @@ export default function AdminDashboardPage() {
 
   return (
     <div>
-      {/* Header Superior */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem', fontFamily: 'Inter, sans-serif' }}>
-            Gestión de Pedidos
-          </h1>
-          <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-            Monitorea, filtra y actualiza el estado de las órdenes en tiempo real.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn-secondary-white" onClick={reload} style={{ minHeight: '44px' }}>
+      <AdminPageHeader
+        title="Gestión de Pedidos"
+        subtitle="Monitorea, filtra y actualiza el estado de las órdenes en tiempo real."
+        actions={
+          <button type="button" className="btn-admin btn-admin-secondary" onClick={reload}>
             ↻ Actualizar
           </button>
-        </div>
-      </div>
+        }
+      />
 
-      {error && (
-        <div role="alert" style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', borderRadius: '10px', padding: '0.9rem 1.1rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
-          ⚠️ {error}
-        </div>
-      )}
+      {error && <AdminAlert variant="danger">⚠️ {error}</AdminAlert>}
 
       {/* Tarjetas Métricas KPI */}
       <div className="kpi-grid">
@@ -113,28 +103,28 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+
       {/* Barra de Búsqueda y Filtros de Estado */}
-      <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.6rem 0.9rem' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" style={{ marginRight: '0.5rem' }}>
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input
-              type="text"
-              placeholder="Buscar por N° de pedido, cliente o producto..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '0.9rem', color: '#0f172a' }}
-            />
-          </div>
-        </div>
+      <div className="admin-filter-bar">
+        <label className="admin-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar por N° de pedido, cliente o producto..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Buscar pedidos"
+          />
+        </label>
 
         <div className="status-tabs">
           {tabs.map((tab) => (
             <button
               key={tab.value}
+              type="button"
               onClick={() => setSelectedStatus(tab.value)}
               className={`tab-pill ${selectedStatus === tab.value ? 'active' : 'inactive'}`}
             >
@@ -145,84 +135,72 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Grid Principal: Tabla de Pedidos a la Izquierda y Detalle a la Derecha */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '1.5rem', alignItems: 'flex-start' }}>
-
-        {/* Tabla de Pedidos */}
-        <div className="admin-table-card" style={{ minWidth: 0 }}>
+      <div className="admin-split">
+        <div className="admin-table-card">
           <div className="admin-table-scroll">
             <table className="admin-table">
-            <thead>
-              <tr>
-                <th>ID / Fecha</th>
-                <th>Cliente</th>
-                <th>Estado</th>
-                <th style={{ textAlign: 'right' }}>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>Cargando pedidos desde Firestore...</td></tr>
-              ) : filteredOrders.length === 0 ? (
+              <thead>
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
-                    No hay pedidos con el estado o filtro seleccionado.
-                  </td>
+                  <th>ID / Fecha</th>
+                  <th>Cliente</th>
+                  <th>Estado</th>
+                  <th className="text-right">Total</th>
                 </tr>
-              ) : (
-                filteredOrders.map((order) => {
-                  const isSelected = order.id === selectedOrder?.id;
-                  const meta = getStatusMeta(order.status);
-                  const itemsCount = order.items?.reduce((acc, i) => acc + i.quantity, 0) || 0;
-                  return (
-                    <tr
-                      key={order.id}
-                      onClick={() => setSelectedOrderId(order.id)}
-                      style={{
-                        cursor: 'pointer',
-                        backgroundColor: isSelected ? '#f4f4f5' : 'transparent',
-                        borderLeft: isSelected ? '4px solid #3f3f46' : '4px solid transparent'
-                      }}
-                    >
-                      <td>
-                        <div style={{ fontWeight: 700, color: '#18181b' }}>{order.orderNumber || order.id}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{formatDateTime(order.createdAt)}</div>
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 600, color: '#0f172a' }}>{order.customer?.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{itemsCount} {itemsCount === 1 ? 'producto' : 'productos'}</div>
-                      </td>
-                      <td>
-                        <span className={`badge-status ${meta.className}`}>{meta.icon} {order.status}</span>
-                      </td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
-                        {formatMoney(order.totalAmount)}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={4} className="table-empty-cell">Cargando pedidos desde Firestore...</td></tr>
+                ) : filteredOrders.length === 0 ? (
+                  <tr><td colSpan={4} className="table-empty-cell">No hay pedidos con el estado o filtro seleccionado.</td></tr>
+                ) : (
+                  filteredOrders.map((order) => {
+                    const isSelected = order.id === selectedOrder?.id;
+                    const meta = getStatusMeta(order.status);
+                    const itemsCount = order.items?.reduce((acc, i) => acc + i.quantity, 0) || 0;
+                    return (
+                      <tr
+                        key={order.id}
+                        onClick={() => setSelectedOrderId(order.id)}
+                        className={`admin-row-selectable${isSelected ? ' is-selected' : ''}`}
+                      >
+                        <td>
+                          <div className="cell-title">{order.orderNumber || order.id}</div>
+                          <div className="cell-subtitle">{formatDateTime(order.createdAt)}</div>
+                        </td>
+                        <td>
+                          <div className="cell-title">{order.customer?.name}</div>
+                          <div className="cell-subtitle">{itemsCount} {itemsCount === 1 ? 'producto' : 'productos'}</div>
+                        </td>
+                        <td>
+                          <span className={`badge-status ${meta.className}`}>{meta.icon} {order.status}</span>
+                        </td>
+                        <td className="cell-amount">{formatMoney(order.totalAmount)}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
             </table>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderTop: '1px solid #e2e8f0', background: '#ffffff', fontSize: '0.85rem', color: '#64748b' }}>
+          <div className="admin-table-footer">
             <span>Mostrando {filteredOrders.length} de {orders.length} pedidos</span>
-            <span style={{ fontSize: '0.78rem' }}>Fuente: <code>GET /api/orders</code></span>
+            <span>Fuente: <code>GET /api/orders</code></span>
           </div>
         </div>
 
         {/* Panel Lateral: Detalle del Pedido Seleccionado */}
-        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="admin-card">
           {!selectedOrder ? (
-            <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Seleccioná un pedido para ver su detalle.</p>
+            <p className="text-muted">Seleccioná un pedido para ver su detalle.</p>
           ) : (
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+              <div className="admin-detail-head mb-lg">
                 <div>
-                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', fontFamily: 'Inter, sans-serif' }}>
-                    Detalle de Pedido <span style={{ color: '#52525b' }}>{selectedOrder.orderNumber || selectedOrder.id}</span>
+                  <h2 className="admin-detail-title">
+                    Detalle de Pedido <span>{selectedOrder.orderNumber || selectedOrder.id}</span>
                   </h2>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Fecha de creación: {formatDateTime(selectedOrder.createdAt)}</p>
+                  <p className="cell-subtitle">Fecha de creación: {formatDateTime(selectedOrder.createdAt)}</p>
                 </div>
                 <span className={`badge-status ${getStatusMeta(selectedOrder.status).className}`}>
                   {getStatusMeta(selectedOrder.status).icon} {selectedOrder.status}
@@ -230,20 +208,20 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Flujo del Pedido (history real de Firestore) */}
-              <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Flujo del Pedido</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div className="admin-detail-section">
+                <h4 className="admin-detail-heading">Flujo del Pedido</h4>
+                <div className="admin-timeline">
                   {(selectedOrder.history || []).map((evt, idx, arr) => {
                     const isLast = idx === arr.length - 1;
                     return (
-                      <div key={`${evt.status}-${idx}`} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: isLast ? '#3f3f46' : '#71717a', marginTop: '4px', flexShrink: 0 }}></div>
+                      <div key={`${evt.status}-${idx}`} className="admin-timeline-item">
+                        <div className={`admin-timeline-dot${isLast ? ' is-current' : ''}`}></div>
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#0f172a' }}>{getStatusMeta(evt.status).icon} {evt.status}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          <div className="admin-timeline-status">{getStatusMeta(evt.status).icon} {evt.status}</div>
+                          <div className="cell-subtitle">
                             {formatDateTime(evt.timestamp)}{evt.author ? ` · ${evt.author}` : ''}
                           </div>
-                          {evt.note && <div style={{ fontSize: '0.75rem', color: '#334155' }}>{evt.note}</div>}
+                          {evt.note && <div className="cell-meta">{evt.note}</div>}
                         </div>
                       </div>
                     );
@@ -252,30 +230,30 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Información del Cliente */}
-              <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Información del Cliente</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.4rem 1rem', fontSize: '0.85rem' }}>
-                  <span style={{ color: '#64748b' }}>Cliente:</span>
-                  <span style={{ fontWeight: 600, color: '#0f172a', textAlign: 'right' }}>{selectedOrder.customer?.name}</span>
-                  <span style={{ color: '#64748b' }}>Correo:</span>
-                  <span style={{ color: '#0f172a', textAlign: 'right' }}>{selectedOrder.customer?.email}</span>
-                  <span style={{ color: '#64748b' }}>Teléfono:</span>
-                  <span style={{ color: '#0f172a', textAlign: 'right' }}>{selectedOrder.customer?.phone}</span>
-                  <span style={{ color: '#64748b' }}>Dirección:</span>
-                  <span style={{ color: '#0f172a', textAlign: 'right' }}>{selectedOrder.customer?.shippingAddress}</span>
+              <div className="admin-detail-section">
+                <h4 className="admin-detail-heading">Información del Cliente</h4>
+                <div className="admin-kv-grid">
+                  <span>Cliente:</span>
+                  <span className="text-strong">{selectedOrder.customer?.name}</span>
+                  <span>Correo:</span>
+                  <span>{selectedOrder.customer?.email}</span>
+                  <span>Teléfono:</span>
+                  <span>{selectedOrder.customer?.phone}</span>
+                  <span>Dirección:</span>
+                  <span>{selectedOrder.customer?.shippingAddress}</span>
                 </div>
               </div>
 
               {/* Productos y Resumen Económico (precios congelados) */}
-              <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', fontSize: '0.88rem' }}>
-                <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Productos Solicitados</h4>
+              <div className="admin-detail-section">
+                <h4 className="admin-detail-heading">Productos Solicitados</h4>
                 {selectedOrder.items?.map((item, idx) => (
-                  <div key={`${item.productId}-${item.saleModeId}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', color: '#334155' }}>
+                  <div key={`${item.productId}-${item.saleModeId}-${idx}`} className="admin-line-item">
                     <span>{item.quantity} × {item.productName}</span>
                     <span>{formatMoney(item.subtotal ?? item.unitPrice * item.quantity)}</span>
                   </div>
                 ))}
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.5rem', marginTop: '0.5rem', borderTop: '1px dashed #e2e8f0', fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>
+                <div className="admin-total-row">
                   <span>Total del Pedido</span>
                   <span>{formatMoney(selectedOrder.totalAmount)}</span>
                 </div>
@@ -283,17 +261,16 @@ export default function AdminDashboardPage() {
 
               {/* Cambiar Estado: pendiente de PATCH /api/orders/:id/status en orders-api */}
               <div>
-                <h4 style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                  Cambiar estado del pedido
-                </h4>
-                <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.75rem' }}>
-                  Se habilita cuando orders-api exponga <code>PATCH /api/orders/:id/status</code> (T18). Gestión completa en <a href="/admin/orders" style={{ color: '#18181b', fontWeight: 600, textDecoration: 'underline' }}>Pedidos</a>.
+                <h4 className="admin-detail-heading">Cambiar estado del pedido</h4>
+                <p className="cell-subtitle mb-sm">
+                  Se habilita cuando orders-api exponga <code>PATCH /api/orders/:id/status</code> (T18). Gestión completa en{' '}
+                  <a href="/admin/orders" className="admin-link">Pedidos</a>.
                 </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+                <div className="admin-status-grid admin-status-grid-3">
                   {ORDER_STATUSES.map(st => {
                     const meta = getStatusMeta(st);
                     return (
-                      <button key={st} disabled className={`badge-status ${meta.className}`} style={{ justifyContent: 'center', opacity: 0.6, cursor: 'not-allowed', minHeight: '36px' }}>
+                      <button key={st} type="button" disabled className={`badge-status badge-action badge-action-sm ${meta.className}`}>
                         {meta.icon} {st}
                       </button>
                     );

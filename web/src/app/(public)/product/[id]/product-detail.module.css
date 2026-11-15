@@ -1,0 +1,200 @@
+/* ==========================================================================
+   Ficha de Detalle de Producto — Coupage Storefront
+   Tokens de Lujo Enológico: Playfair Display + Inter + Gold
+   ========================================================================== */
+
+.container {
+  padding: 3rem 2rem 5rem;
+  max-width: var(--container-narrow-max-width, 1200px);
+  margin: 0 auto;
+}
+
+.breadcrumb {
+  margin-bottom: 2rem;
+}
+
+.backLink {
+  color: var(--color-gold);
+  font-size: var(--text-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.emptyState {
+  padding: 4rem;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.notFoundTitle {
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  margin-bottom: 1rem;
+}
+
+.notFoundDesc {
+  color: var(--color-text-secondary);
+  margin-bottom: 2rem;
+}
+
+.notFoundLink {
+  color: var(--color-gold);
+  text-decoration: underline;
+}
+
+.layoutGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 3.5rem;
+}
+
+.galleryCard {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2.5rem;
+}
+
+.productImage {
+  max-width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+}
+
+.detailsCol {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.brandCategory {
+  color: var(--color-gold);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.productTitle {
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.15;
+}
+
+.productPrice {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--color-gold);
+}
+
+.tastingNotesCard {
+  background-color: var(--color-bg-input);
+  padding: 1.5rem;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.sectionEyebrow {
+  color: var(--color-gold);
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.tastingNotesText {
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  font-size: 0.92rem;
+}
+
+.modalityHeading {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.modalityGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.modalityBtn {
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast, 150ms ease-in-out);
+}
+
+.modalityBtn:hover {
+  border-color: var(--color-gold-hover);
+}
+
+.modalityBtnActive {
+  background-color: var(--color-gold-muted);
+  border-color: var(--color-gold);
+}
+
+.modalityName {
+  display: block;
+}
+
+.modalityNameActive {
+  color: var(--color-gold);
+}
+
+.modalityPrice {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.actionsRow {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.quantityPicker {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border-subtle);
+  background-color: var(--color-bg-input);
+}
+
+.quantityBtn {
+  min-width: 48px;
+  min-height: 48px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.quantityValue {
+  padding: 0 1rem;
+  font-weight: 600;
+  min-width: 48px;
+  text-align: center;
+}
+
+.addCartBtn {
+  flex: 1;
+  min-height: 48px;
+  font-size: 0.9rem;
+}
+

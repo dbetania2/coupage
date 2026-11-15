@@ -254,4 +254,77 @@
   line-height: 1.6;
 }
 
+.searchTitle {
+  font-size: 1.25rem;
+  color: var(--color-text-primary);
+}
+
+.searchCloseBtn {
+  min-width: 40px;
+  min-height: 40px;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.searchCloseBtn:hover {
+  color: var(--color-gold);
+}
+
+.searchSubmitBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.searchScrollBox {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.searchResultsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.searchResultItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  text-decoration: none;
+}
+
+.searchResultItem:hover {
+  border-color: var(--color-border-gold);
+}
+
+.resultEyebrow {
+  font-size: 0.7rem;
+  color: var(--color-gold);
+  text-transform: uppercase;
+}
+
+.resultTitle {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.resultRight {
+  text-align: right;
+}
+
+.resultPrice {
+  color: var(--color-gold);
+}
+
+.resultMeta {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
 

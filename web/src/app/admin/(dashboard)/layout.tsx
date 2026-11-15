@@ -32,8 +32,8 @@ export default function AdminLayout({
   // Si no está autorizado aún, no renderizar el panel ni el sidebar para evitar flash visual
   if (!isAuthorized) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0a0a0a', color: '#c5a059' }}>
-        <p style={{ letterSpacing: '0.15em', textTransform: 'uppercase', fontSize: '0.85rem' }}>Verificando credenciales...</p>
+      <div className="admin-auth-loader">
+        <p>Verificando credenciales...</p>
       </div>
     );
   }

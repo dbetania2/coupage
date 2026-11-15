@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { getAccessToken, getRefreshToken } from '@/lib/auth';
 import { ORDERS_API_URL } from '@/features/orders/useOrders';
+import { AdminPageHeader } from '@/shared/ui/admin';
 
 export default function AdminSettingsPage() {
   const [healthStatus, setHealthStatus] = useState<string>('Verificando...');
@@ -39,24 +40,16 @@ export default function AdminSettingsPage() {
 
   return (
     <div>
-      <header style={{ marginBottom: '1.5rem' }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#52525b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Parámetros del Sistema · Integración de Microservicios
-        </span>
-        <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem', fontFamily: 'Inter, sans-serif' }}>
-          Configuración y Diagnóstico de APIs
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-          Estado en vivo de la conexión entre Next.js, Django DRF (Catalog API), Node.js (Orders API + Cloud Firestore) y el Asistente IA.
-        </p>
-      </header>
+      <AdminPageHeader
+        eyebrow="Parámetros del Sistema · Integración de Microservicios"
+        title="Configuración y Diagnóstico de APIs"
+        subtitle="Estado en vivo de la conexión entre Next.js, Django DRF (Catalog API), Node.js (Orders API + Cloud Firestore) y el Asistente IA."
+      />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-        <section style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', fontFamily: 'Inter, sans-serif' }}>
-            Endpoints y Probes de Salud (T05, T15, T16)
-          </h2>
-          <div style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc', fontSize: '0.84rem', lineHeight: 1.8 }}>
+      <div className="admin-grid-2">
+        <section className="admin-card admin-card-stack">
+          <h2 className="admin-card-title">Endpoints y Probes de Salud (T05, T15, T16)</h2>
+          <div className="admin-info-box admin-info-box-loose">
             • <strong>Catalog API (Django):</strong> <code>{catalogUrl}</code><br />
             • <strong>Orders API (Node.js):</strong> <code>{ORDERS_API_URL}</code><br />
             • <strong>Liveness Probe (GET /health):</strong> <code>{healthStatus}</code><br />
@@ -64,11 +57,9 @@ export default function AdminSettingsPage() {
           </div>
         </section>
 
-        <section style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', fontFamily: 'Inter, sans-serif' }}>
-            Seguridad JWT y Asistente IA (T06, T25, T31)
-          </h2>
-          <div style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc', fontSize: '0.84rem', lineHeight: 1.8 }}>
+        <section className="admin-card admin-card-stack">
+          <h2 className="admin-card-title">Seguridad JWT y Asistente IA (T06, T25, T31)</h2>
+          <div className="admin-info-box admin-info-box-loose">
             • <strong>Access Token JWT (Django SimpleJWT):</strong>{' '}
             <code>{hasAccess ? 'Activo en sesión' : 'No presente'}</code><br />
             • <strong>Refresh Token JWT:</strong>{' '}
