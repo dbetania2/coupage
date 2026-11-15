@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useOrders, getStatusMeta, formatMoney } from '@/features/orders/useOrders';
+import { AdminPageHeader, AdminAlert } from '@/shared/ui/admin';
 
 interface AggregatedCustomer {
   key: string;
@@ -47,23 +48,13 @@ export default function AdminCustomersPage() {
 
   return (
     <div>
-      <header style={{ marginBottom: '1.5rem' }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#52525b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Directorio de Solicitantes · Cloud Firestore (orders-api)
-        </span>
-        <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem', fontFamily: 'Inter, sans-serif' }}>
-          Clientes y Datos de Contacto
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-          Compradores reales registrados en las solicitudes de pedido de Cloud Firestore ({customers.length} clientes únicos).
-        </p>
-      </header>
+      <AdminPageHeader
+        eyebrow="Directorio de Solicitantes · Cloud Firestore (orders-api)"
+        title="Clientes y Datos de Contacto"
+        subtitle={`Compradores reales registrados en las solicitudes de pedido de Cloud Firestore (${customers.length} clientes únicos).`}
+      />
 
-      {error && (
-        <div style={{ padding: '1rem', marginBottom: '1rem', borderRadius: '8px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.85rem' }}>
-          ⚠️ {error}
-        </div>
-      )}
+      {error && <AdminAlert variant="danger">⚠️ {error}</AdminAlert>}
 
       <div className="admin-table-card">
         <table className="admin-table">
@@ -80,15 +71,11 @@ export default function AdminCustomersPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                  Cargando clientes desde Firestore...
-                </td>
+                <td colSpan={6} className="table-empty-cell">Cargando clientes desde Firestore...</td>
               </tr>
             ) : customers.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                  No hay clientes registrados aún en Firestore.
-                </td>
+                <td colSpan={6} className="table-empty-cell">No hay clientes registrados aún en Firestore.</td>
               </tr>
             ) : (
               customers.map((c) => {
@@ -98,11 +85,11 @@ export default function AdminCustomersPage() {
                     <td><strong>{c.name}</strong></td>
                     <td>
                       <div>{c.email}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{c.phone}</div>
+                      <div className="cell-subtitle">{c.phone}</div>
                     </td>
                     <td>{c.address}</td>
                     <td><strong>{c.ordersCount}</strong> pedido(s)</td>
-                    <td className="order-amount">{formatMoney(c.totalSpent)}</td>
+                    <td className="text-strong">{formatMoney(c.totalSpent)}</td>
                     <td>
                       <span className={`badge-status ${meta.className}`}>
                         {meta.icon} {c.lastOrderNumber} · {c.lastStatus}

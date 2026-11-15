@@ -126,8 +126,8 @@ export default function AdminAssistantWidget() {
             </header>
 
             <div className={styles.metaBar}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1, minWidth: 0 }}>
-                <label htmlFor="widget-session-select" style={{ fontWeight: 600 }}>
+              <div className={styles.sessionGroup}>
+                <label htmlFor="widget-session-select" className={styles.sessionLabel}>
                   Sesión:
                 </label>
                 <select
@@ -141,16 +141,7 @@ export default function AdminAssistantWidget() {
                       void selectSession(val);
                     }
                   }}
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    fontSize: '0.74rem',
-                    padding: '0.2rem 0.4rem',
-                    borderRadius: '6px',
-                    border: '1px solid #d4d4d8',
-                    backgroundColor: '#ffffff',
-                    color: '#18181b',
-                  }}
+                  className={styles.sessionSelect}
                 >
                   <option value="">+ Nueva sesión del turno</option>
                   {sessions.map((s) => (
@@ -163,16 +154,7 @@ export default function AdminAssistantWidget() {
               <button
                 type="button"
                 onClick={startNewSession}
-                style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  padding: '0.2rem 0.5rem',
-                  borderRadius: '6px',
-                  border: '1px solid #d4d4d8',
-                  backgroundColor: '#ffffff',
-                  color: '#18181b',
-                  cursor: 'pointer',
-                }}
+                className={styles.sessionNewBtn}
                 title="Iniciar una nueva sesión limpia para este turno"
               >
                 + Nueva
@@ -200,17 +182,17 @@ export default function AdminAssistantWidget() {
               </div>
 
               {error && (
-                <div style={{ padding: '0.75rem', borderRadius: '8px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.8rem' }}>
+                <div role="alert" className="admin-alert admin-alert-danger">
                   ⚠️ {error}
                 </div>
               )}
 
               {messages.length === 0 ? (
                 <div className={styles.assistantCard}>
-                  <strong style={{ color: '#27272a' }}>
+                  <strong className={styles.assistantTitle}>
                     🤖 Asistente Operativo Listo
                   </strong>
-                  <p style={{ color: '#475569', lineHeight: 1.5 }}>
+                  <p className={styles.assistantDesc}>
                     Seleccioná una sugerencia rápida o escribí tu pregunta abajo para consultar en vivo los pedidos de
                     Firestore y el catálogo de Django.
                   </p>
@@ -221,7 +203,7 @@ export default function AdminAssistantWidget() {
                     return (
                       <div key={`w-msg-${idx}`} className={styles.userBubble}>
                         <strong>👤 Consulta:</strong>
-                        <div style={{ marginTop: '0.25rem' }}>{msg.content}</div>
+                        <div className={styles.userContent}>{msg.content}</div>
                       </div>
                     );
                   }
@@ -231,7 +213,7 @@ export default function AdminAssistantWidget() {
                     <React.Fragment key={`w-msg-${idx}`}>
                       {msg.toolTraces && msg.toolTraces.length > 0 && (
                         <div className={styles.toolTraceBox}>
-                          <strong style={{ color: '#0f172a', display: 'block', marginBottom: '0.25rem' }}>
+                          <strong className={styles.toolTitle}>
                             🔧 Tool Calling ejecutado en Node.js:
                           </strong>
                           {msg.toolTraces.map((t, tIdx) => (
@@ -243,7 +225,7 @@ export default function AdminAssistantWidget() {
                       )}
 
                       <div className={styles.assistantCard}>
-                        <strong style={{ color: '#27272a' }}>
+                        <strong className={styles.assistantTitle}>
                           🤖 Respuesta del Asistente:
                         </strong>
                         {blocks.map((b, bIdx) =>
@@ -271,7 +253,7 @@ export default function AdminAssistantWidget() {
                               </div>
                             </div>
                           ) : (
-                            <div key={`wb-${bIdx}`} style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                            <div key={`wb-${bIdx}`} className={styles.msgText}>
                               {b.text}
                             </div>
                           )

@@ -115,13 +115,12 @@ export default function AdminSidebar() {
       {/* Brand Header con Logo de Tu Gusto Gourmet + Botón de Colapsar/Expandir integrado en el flujo */}
       <div className="admin-brand">
         {!isCollapsed && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flex: 1 }}>
+          <div className="admin-brand-main">
             <div className="admin-brand-icon">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/brand/tgg.png"
                 alt="Tu Gusto Gourmet Logo"
-                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               />
             </div>
             <div className="admin-brand-text">
@@ -160,11 +159,6 @@ export default function AdminSidebar() {
               href={item.href}
               title={isCollapsed ? item.label : undefined}
               className={`admin-nav-item ${isActive ? 'active' : ''}`}
-              style={{
-                minHeight: '44px',
-                justifyContent: isCollapsed ? 'center' : 'flex-start',
-                padding: isCollapsed ? '0.7rem' : '0.7rem 0.9rem',
-              }}
             >
               <span className="nav-icon">{item.icon}</span>
               {!isCollapsed && <span className="nav-label">{item.label}</span>}
@@ -174,34 +168,18 @@ export default function AdminSidebar() {
       </nav>
 
       {/* Enlace directo a la Web Pública */}
-      <div style={{ marginBottom: '1rem', padding: '0 0.25rem' }}>
+      <div className="admin-store-link-wrap">
         <Link
           href="/"
           title="Ver Tienda Pública"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '40px',
-            borderRadius: '8px',
-            border: '1px dashed #3f3f46',
-            color: '#d4d4d8',
-            fontSize: '0.78rem',
-            textDecoration: 'none',
-          }}
+          className="admin-store-link"
         >
           {isCollapsed ? '←' : '← Ver Tienda Pública'}
         </Link>
       </div>
 
       {/* User Profile Footer & Logout */}
-      <div
-        className="admin-user-footer"
-        style={{
-          flexDirection: isCollapsed ? 'column' : 'row',
-          gap: isCollapsed ? '0.6rem' : '0',
-        }}
-      >
+      <div className="admin-user-footer">
         <div className="user-profile">
           <div className="user-avatar" title="Administrador">
             <span>AD</span>
@@ -217,7 +195,6 @@ export default function AdminSidebar() {
           className="btn-logout"
           title="Cerrar Sesión (Invalida Refresh Token)"
           aria-label="Cerrar Sesión"
-          style={{ minWidth: '40px', minHeight: '40px' }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>

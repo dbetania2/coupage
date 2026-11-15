@@ -260,3 +260,66 @@
   padding: 0.25rem;
 }
 
+.sessionGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.sessionLabel {
+  font-weight: 600;
+}
+
+.sessionSelect {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.74rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #d4d4d8;
+  background-color: #ffffff;
+  color: #18181b;
+}
+
+.sessionNewBtn {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #d4d4d8;
+  background-color: #ffffff;
+  color: #18181b;
+  cursor: pointer;
+}
+
+.sessionNewBtn:hover {
+  background-color: #f4f4f5;
+}
+
+.assistantTitle {
+  color: #27272a;
+}
+
+.assistantDesc {
+  color: #475569;
+  line-height: 1.5;
+}
+
+.userContent {
+  margin-top: 0.25rem;
+}
+
+.toolTitle {
+  color: #0f172a;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.msgText {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+
