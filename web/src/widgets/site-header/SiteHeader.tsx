@@ -180,19 +180,14 @@ export default function SiteHeader() {
         >
           <div className={styles.searchModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.searchHeader}>
-              <h2 id="quick-search-title" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>
+              <h2 id="quick-search-title" className={styles.searchTitle}>
                 Buscar en el Catálogo (Django Catalog API)
               </h2>
               <button
                 type="button"
                 onClick={closeSearch}
-                style={{
-                  minWidth: '40px',
-                  minHeight: '40px',
-                  background: 'transparent',
-                  border: '1px solid var(--color-border-subtle)',
-                  color: 'var(--color-text-secondary)',
-                }}
+                className={styles.searchCloseBtn}
+                aria-label="Cerrar búsqueda"
               >
                 ✕
               </button>
@@ -210,16 +205,15 @@ export default function SiteHeader() {
               <Link
                 href="/catalogo"
                 onClick={closeSearch}
-                className="btn-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                className={`btn-primary ${styles.searchSubmitBtn}`}
               >
                 Ver Todo
               </Link>
             </div>
 
-            <div className={styles.searchPlaceholderBox} style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            <div className={`${styles.searchPlaceholderBox} ${styles.searchScrollBox}`}>
               {filteredSearchProducts.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className={styles.searchResultsList}>
                   {filteredSearchProducts.slice(0, 6).map((prod) => {
                     const priceVal = prod.sale_modes?.[0]?.prices?.[0]?.amount;
                     const modeType = prod.sale_modes?.[0]?.type || 'Unidad';
@@ -228,26 +222,19 @@ export default function SiteHeader() {
                         key={prod.id}
                         href={`/product/${prod.id}`}
                         onClick={closeSearch}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '0.65rem 0.85rem',
-                          backgroundColor: 'var(--color-bg-card)',
-                          border: '1px solid var(--color-border-subtle)',
-                        }}
+                        className={styles.searchResultItem}
                       >
                         <div>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-gold)', textTransform: 'uppercase' }}>
+                          <span className={styles.resultEyebrow}>
                             {prod.brand?.name || 'Coupage'} · {prod.category?.name || 'Catálogo'}
                           </span>
-                          <div style={{ color: 'var(--color-text-primary)', fontWeight: 500 }}>{prod.name}</div>
+                          <div className={styles.resultTitle}>{prod.name}</div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <strong style={{ color: 'var(--color-gold)' }}>
+                        <div className={styles.resultRight}>
+                          <strong className={styles.resultPrice}>
                             {priceVal ? `$${Number(priceVal).toLocaleString('es-AR')}` : 'Consultar'}
                           </strong>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>{modeType}</div>
+                          <div className={styles.resultMeta}>{modeType}</div>
                         </div>
                       </Link>
                     );

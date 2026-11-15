@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCartUI } from '@/features/cart/context/CartUIContext';
+import styles from './product-detail.module.css';
 
 interface ProductDetail {
   id: number;
@@ -50,7 +51,7 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <main style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+      <main className={styles.emptyState}>
         Cargando joya seleccionada desde la base de datos...
       </main>
     );
@@ -58,12 +59,12 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <main style={{ padding: '4rem', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Producto no encontrado</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+      <main className={styles.emptyState}>
+        <h2 className={styles.notFoundTitle}>Producto no encontrado</h2>
+        <p className={styles.notFoundDesc}>
           La joya gastronómica solicitada no está disponible o el servidor de catálogo no está activo.
         </p>
-        <Link href="/catalogo" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>
+        <Link href="/catalogo" className={styles.notFoundLink}>
           ← Volver al Catálogo Público
         </Link>
       </main>
@@ -98,23 +99,16 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <div style={{ padding: '3rem 2rem 5rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <Link href="/catalogo" style={{ color: 'var(--accent-gold)', fontSize: '0.85rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+    <div className={styles.container}>
+      <div className={styles.breadcrumb}>
+        <Link href="/catalogo" className={styles.backLink}>
           ← Volver al Catálogo Público
         </Link>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '3.5rem' }}>
+      <div className={styles.layoutGrid}>
         {/* Columna Izquierda: Imagen */}
-        <div style={{
-          backgroundColor: 'var(--bg-card)',
-          border: '1px solid var(--border-color)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '2.5rem',
-        }}>
+        <div className={styles.galleryCard}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={rawImageUrl || fallbackImage}
@@ -125,58 +119,51 @@ export default function ProductDetailPage() {
                 target.src = fallbackImage;
               }
             }}
-            style={{ maxWidth: '100%', maxHeight: '480px', objectFit: 'contain' }}
+            className={styles.productImage}
           />
         </div>
 
         {/* Columna Derecha: Detalles y Controles de Selección */}
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1.5rem' }}>
+        <div className={styles.detailsCol}>
           <div>
-            <p style={{ color: 'var(--accent-gold)', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+            <p className={styles.brandCategory}>
               {brandName} · {categoryName}
             </p>
-            <h1 style={{ fontSize: '2.5rem', marginBottom: '0.75rem', lineHeight: 1.15 }}>{product.name}</h1>
-            <p style={{ fontSize: '1.6rem', fontWeight: 600, color: 'var(--accent-gold)' }}>
+            <h1 className={styles.productTitle}>{product.name}</h1>
+            <p className={styles.productPrice}>
               {numericPrice > 0 ? `$${numericPrice.toLocaleString('es-AR')}` : 'Consultar'}
             </p>
           </div>
           
-          <div style={{ backgroundColor: 'var(--bg-input)', padding: '1.5rem', border: '1px solid var(--border-color)' }}>
-            <p style={{ color: 'var(--accent-gold)', fontSize: '0.75rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+          <div className={styles.tastingNotesCard}>
+            <p className={styles.sectionEyebrow}>
               Notas de Cata y Descripción
             </p>
-            <p style={{ color: 'var(--text-primary)', lineHeight: 1.6, fontSize: '0.92rem' }}>
+            <p className={styles.tastingNotesText}>
               {product.description || 'Sin descripción adicional registrada.'}
             </p>
           </div>
 
           {/* Selector de Modalidad de Venta (Unidad vs. Caja/Paquete) */}
           <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem', fontWeight: 600 }}>
+            <p className={styles.modalityHeading}>
               Modalidad Habilitada
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+            <div className={styles.modalityGrid}>
               {saleModes.map((mode, idx) => {
                 const modeAmount = mode.prices?.[0]?.amount ? Number(mode.prices[0].amount) : 0;
+                const isSelected = selectedModalityIndex === idx;
                 return (
                   <button
                     key={mode.id || mode.type}
                     type="button"
                     onClick={() => setSelectedModalityIndex(idx)}
-                    style={{
-                      minHeight: '48px',
-                      padding: '0.75rem 1rem',
-                      textAlign: 'left',
-                      backgroundColor: selectedModalityIndex === idx ? 'rgba(197, 160, 89, 0.15)' : 'var(--bg-card)',
-                      border: selectedModalityIndex === idx ? '1px solid var(--accent-gold)' : '1px solid var(--border-color)',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.85rem',
-                    }}
+                    className={`${styles.modalityBtn} ${isSelected ? styles.modalityBtnActive : ''}`}
                   >
-                    <strong style={{ display: 'block', color: selectedModalityIndex === idx ? 'var(--accent-gold)' : 'inherit' }}>
+                    <strong className={`${styles.modalityName} ${isSelected ? styles.modalityNameActive : ''}`}>
                       {mode.type}
                     </strong>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    <span className={styles.modalityPrice}>
                       {modeAmount > 0 ? `$${modeAmount.toLocaleString('es-AR')}` : 'Consultar'}
                     </span>
                   </button>
@@ -186,28 +173,23 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Selector de Cantidad y Botón Principal (Ley de Fitts >= 44px) */}
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'stretch', flexWrap: 'wrap' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--bg-input)',
-            }}>
+          <div className={styles.actionsRow}>
+            <div className={styles.quantityPicker}>
               <button
                 type="button"
                 onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                style={{ minWidth: '48px', minHeight: '48px', background: 'transparent', color: 'var(--text-primary)', fontSize: '1.2rem' }}
+                className={styles.quantityBtn}
                 aria-label="Disminuir cantidad"
               >
                 −
               </button>
-              <span style={{ padding: '0 1rem', fontWeight: 600, minWidth: '48px', textAlign: 'center' }}>
+              <span className={styles.quantityValue}>
                 {quantity}
               </span>
               <button
                 type="button"
                 onClick={() => setQuantity(prev => prev + 1)}
-                style={{ minWidth: '48px', minHeight: '48px', background: 'transparent', color: 'var(--text-primary)', fontSize: '1.2rem' }}
+                className={styles.quantityBtn}
                 aria-label="Aumentar cantidad"
               >
                 +
@@ -217,8 +199,7 @@ export default function ProductDetailPage() {
             <button
               type="button"
               onClick={handleAdd}
-              className="btn-add-cart"
-              style={{ flex: 1, minHeight: '48px', fontSize: '0.9rem' }}
+              className={`btn-add-cart ${styles.addCartBtn}`}
             >
               AGREGAR AL CARRITO
             </button>

@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import styles from './FilterSidebar.module.css';
 
 interface Category {
   id: number;
@@ -24,40 +25,42 @@ export default function FilterSidebar({ onCategoryChange, currentCategory }: Fil
   useEffect(() => {
     const baseUrl = process.env.NEXT_PUBLIC_CATALOG_API_URL || 'http://127.0.0.1:8000/api';
     fetch(`${baseUrl}/categories/`)
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
       })
-      .then(data => {
+      .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setCategories(data);
         }
       })
-      .catch(err => {
-        console.warn("No se pudieron cargar las categorías desde la API, usando categorías por defecto.", err);
+      .catch((err) => {
+        console.warn('No se pudieron cargar las categorías desde la API, usando categorías por defecto.', err);
       });
   }, []);
 
   return (
-    <aside className="filter-sidebar">
-      <div className="filter-header">
+    <aside className={styles.filterSidebar}>
+      <div className={styles.filterHeader}>
         <h3>Filtros</h3>
-        <button className="btn-clear" onClick={() => onCategoryChange('')}>LIMPIAR TODO</button>
+        <button type="button" className={styles.btnClear} onClick={() => onCategoryChange('')}>
+          LIMPIAR TODO
+        </button>
       </div>
 
-      <div className="filter-group">
-        <div className="filter-group-header">
+      <div className={styles.filterGroup}>
+        <div className={styles.filterGroupHeader}>
           <h4>CATEGORÍAS</h4>
           <span>⌄</span>
         </div>
         {categories.map((cat) => (
-          <label key={cat.id} className="checkbox-label">
-            <input 
-              type="checkbox" 
-              checked={currentCategory === cat.name} 
-              onChange={() => onCategoryChange(currentCategory === cat.name ? '' : cat.name)} 
+          <label key={cat.id} className={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={currentCategory === cat.name}
+              onChange={() => onCategoryChange(currentCategory === cat.name ? '' : cat.name)}
             />
-            <span className="checkmark"></span>
+            <span className={styles.checkmark}></span>
             {cat.name}
           </label>
         ))}

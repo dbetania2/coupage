@@ -70,6 +70,10 @@
   flex-wrap: wrap;
 }
 
+.ctaLink {
+  text-decoration: none;
+}
+
 .arrow {
   margin-left: 0.25rem;
   transition: transform var(--transition-fast);

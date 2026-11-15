@@ -40,7 +40,7 @@ export default function SeguimientoPedidoPage() {
     <div className={styles.pageWrapper}>
       <header className={styles.header}>
         <p className={styles.breadcrumb}>
-          Inicio / <span style={{ color: 'var(--color-gold)' }}>Seguimiento de Solicitud</span>
+          Inicio / <span className={styles.goldHighlight}>Seguimiento de Solicitud</span>
         </p>
         <h1 className={styles.title}>Seguimiento de tu Solicitud de Pedido</h1>
         <p className={styles.subtitle}>
@@ -51,7 +51,7 @@ export default function SeguimientoPedidoPage() {
 
       {/* Buscador por Código de Seguimiento */}
       <section className={styles.searchCard} aria-labelledby="tracking-search-heading">
-        <h2 id="tracking-search-heading" className={styles.sectionHeading} style={{ marginBottom: 0 }}>
+        <h2 id="tracking-search-heading" className={`${styles.sectionHeading} ${styles.headingNoMargin}`}>
           Buscar por Código de Pedido o Nombre
         </h2>
         <form className={styles.searchForm} onSubmit={handleSearch}>
@@ -70,8 +70,8 @@ export default function SeguimientoPedidoPage() {
 
         {/* Selector rápido de pedidos reales en la base de datos */}
         {orders.length > 0 && (
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+          <div className={styles.recentChipsRow}>
+            <span className={styles.recentChipsLabel}>
               Pedidos en Firestore:
             </span>
             {orders.map((ord) => (
@@ -82,16 +82,7 @@ export default function SeguimientoPedidoPage() {
                   setSelectedOrderId(ord.id);
                   setTrackingInput(ord.orderNumber || ord.id);
                 }}
-                style={{
-                  padding: '0.35rem 0.75rem',
-                  fontSize: '0.75rem',
-                  borderRadius: '4px',
-                  backgroundColor:
-                    selectedOrder?.id === ord.id ? 'var(--color-gold)' : 'var(--color-bg-base)',
-                  color: selectedOrder?.id === ord.id ? '#080808' : 'var(--color-text-primary)',
-                  border: '1px solid var(--color-border-medium)',
-                  fontWeight: 600,
-                }}
+                className={styles.recentChipBtn}
               >
                 {ord.orderNumber || ord.id} ({ord.status})
               </button>
@@ -101,14 +92,14 @@ export default function SeguimientoPedidoPage() {
       </section>
 
       {loading ? (
-        <p style={{ color: 'var(--color-text-secondary)' }}>Cargando pedidos desde Firestore...</p>
+        <p className={styles.secondaryText}>Cargando pedidos desde Firestore...</p>
       ) : selectedOrder ? (
         <>
           {/* Máquina de Estados del Ciclo de Vida */}
           <section className={styles.stepperSection} aria-labelledby="lifecycle-heading">
             <h2 id="lifecycle-heading" className={styles.sectionHeading}>
               Estado Actual del Pedido {selectedOrder.orderNumber}:{' '}
-              <span style={{ color: '#fff' }}>{selectedOrder.status}</span>
+              <span className={styles.whiteHighlight}>{selectedOrder.status}</span>
             </h2>
 
             <div className={styles.statesGrid}>
@@ -124,7 +115,7 @@ export default function SeguimientoPedidoPage() {
                       {historyMatch ? '✓ ' : ''}
                       {stage.code}
                     </span>
-                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>
+                    <strong className={styles.stateNameText}>
                       {stage.label}
                     </strong>
                     <p className={styles.stateDesc}>
@@ -139,8 +130,7 @@ export default function SeguimientoPedidoPage() {
 
             {(selectedOrder.status === 'CANCELADO' || selectedOrder.status === 'RECHAZADO') && (
               <div
-                className={styles.placeholderBlock}
-                style={{ marginTop: '1rem', borderColor: '#ef4444', color: '#fca5a5' }}
+                className={`${styles.placeholderBlock} ${styles.terminalAlert}`}
               >
                 ⚠️ <strong>Pedido {selectedOrder.status}:</strong>{' '}
                 {selectedOrder.history?.[selectedOrder.history.length - 1]?.note ||
@@ -152,14 +142,14 @@ export default function SeguimientoPedidoPage() {
           {/* Detalle en 2 columnas: Trazabilidad Histórica + Ítems Solicitados */}
           <div className={styles.detailsGrid}>
             <section className={styles.infoCard} aria-labelledby="history-heading">
-              <h2 id="history-heading" className={styles.sectionHeading} style={{ marginBottom: 0 }}>
+              <h2 id="history-heading" className={`${styles.sectionHeading} ${styles.headingNoMargin}`}>
                 Historial de Trazabilidad (Firestore history)
               </h2>
 
               {selectedOrder.history && selectedOrder.history.length > 0 ? (
                 selectedOrder.history.map((evt, index) => (
                   <div key={`${evt.status}-${index}`} className={styles.placeholderBlock}>
-                    <strong style={{ color: 'var(--color-gold)' }}>
+                    <strong className={styles.goldHighlight}>
                       ● {evt.status} — {formatDateTime(evt.timestamp)}
                     </strong>
                     <br />
@@ -167,31 +157,31 @@ export default function SeguimientoPedidoPage() {
                   </div>
                 ))
               ) : (
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
+                <p className={styles.secondaryText}>
                   Sin eventos registrados en el historial.
                 </p>
               )}
             </section>
 
             <section className={styles.infoCard} aria-labelledby="items-heading">
-              <h2 id="items-heading" className={styles.sectionHeading} style={{ marginBottom: 0 }}>
+              <h2 id="items-heading" className={`${styles.sectionHeading} ${styles.headingNoMargin}`}>
                 Productos Solicitados y Datos del Cliente
               </h2>
 
               {selectedOrder.items?.map((item, idx) => (
                 <div key={`${item.productId}-${idx}`} className={styles.placeholderBlock}>
-                  <strong style={{ color: 'var(--color-text-primary)' }}>{item.productName}</strong>
+                  <strong className={styles.primaryText}>{item.productName}</strong>
                   <br />• Cantidad: <strong>{item.quantity}</strong> · Precio Unitario Congelado:{' '}
                   <strong>${Number(item.unitPrice).toLocaleString('es-AR')}</strong>
                   <br />• Subtotal:{' '}
-                  <strong style={{ color: 'var(--color-gold)' }}>
+                  <strong className={styles.goldHighlight}>
                     ${Number(item.subtotal || item.unitPrice * item.quantity).toLocaleString('es-AR')}
                   </strong>
                 </div>
               ))}
 
               <div className={styles.placeholderBlock}>
-                <strong style={{ color: 'var(--color-gold)' }}>Datos del Solicitante:</strong>
+                <strong className={styles.goldHighlight}>Datos del Solicitante:</strong>
                 <br />• Cliente: {selectedOrder.customer?.name}
                 <br />• Contacto: {selectedOrder.customer?.email} · {selectedOrder.customer?.phone}
                 <br />• Entrega: {selectedOrder.customer?.shippingAddress}

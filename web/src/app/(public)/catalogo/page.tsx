@@ -1,8 +1,9 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import ProductGrid from '@/components/ProductGrid';
-import { ProductCardProps } from '@/components/ProductCard';
+import { ProductCardProps } from '@/features/catalog/ui/ProductCard';
 import FilterSidebar from '@/components/FilterSidebar';
+import styles from './page.module.css';
 
 interface DjangoProduct {
   id: number;
@@ -80,50 +81,42 @@ export default function Home() {
   }, [selectedCategory, ordering]);
 
   return (
-    <main style={{ padding: '2rem 4rem', maxWidth: '1280px', margin: '0 auto' }}>
+    <main className={styles.main}>
       
-      <header style={{ marginBottom: '2.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '2rem' }}>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Inicio / <span style={{ color: 'var(--accent-gold)' }}>Catálogo Público</span>
+      <header className={styles.header}>
+        <p className={styles.breadcrumb}>
+          Inicio / <span className={styles.breadcrumbActive}>Catálogo Público</span>
         </p>
-        <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Colección de Grandes Reservas</h1>
-        <p style={{ color: 'var(--text-secondary)', maxWidth: '640px', lineHeight: '1.6' }}>
+        <h1 className={styles.title}>Colección de Grandes Reservas</h1>
+        <p className={styles.subtitle}>
           Descubra obras maestras embotelladas y delicatessen. Seleccione sus productos por unidad o por caja para armar su solicitud de pedido.
         </p>
       </header>
 
-      <div className="main-layout">
+      <div className={styles.mainLayout}>
         <FilterSidebar onCategoryChange={handleCategoryChange} currentCategory={selectedCategory} />
         
-        <section style={{ flexGrow: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-              Mostrando <strong style={{ color: 'white' }}>{products.length}</strong> de <strong style={{ color: 'white' }}>{totalCount}</strong> joyas seleccionadas
+        <section className={styles.contentSection}>
+          <div className={styles.toolbar}>
+            <p className={styles.resultsCount}>
+              Mostrando <strong className={styles.resultsCountBold}>{products.length}</strong> de <strong className={styles.resultsCountBold}>{totalCount}</strong> joyas seleccionadas
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Ordenar por:</span>
+            <div className={styles.sortGroup}>
+              <span className={styles.sortLabel}>Ordenar por:</span>
               <select
                 value={ordering}
                 onChange={(e) => handleOrderingChange(e.target.value)}
-                style={{
-                  background: 'transparent',
-                  color: 'white',
-                  border: '1px solid var(--border-color)',
-                  padding: '0.45rem 0.75rem',
-                  minHeight: '40px',
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                }}
+                className={styles.sortSelect}
               >
-                <option value="-id" style={{ background: '#111' }}>Más recientes</option>
-                <option value="name" style={{ background: '#111' }}>Nombre (A-Z)</option>
-                <option value="-name" style={{ background: '#111' }}>Nombre (Z-A)</option>
+                <option value="-id" className={styles.sortOption}>Más recientes</option>
+                <option value="name" className={styles.sortOption}>Nombre (A-Z)</option>
+                <option value="-name" className={styles.sortOption}>Nombre (Z-A)</option>
               </select>
             </div>
           </div>
           
           {loading ? (
-            <p style={{ color: 'var(--text-secondary)', padding: '2rem 0' }}>Cargando productos de la base de datos...</p>
+            <p className={styles.loadingText}>Cargando productos de la base de datos...</p>
           ) : (
             <ProductGrid products={products} />
           )}
