@@ -1,5 +1,5 @@
 """
-Configuración de paginación estándar para la API de Catálogo (Unidad 8.1).
+Configuración de paginación estándar para la API de Catálogo.
 Fragmenta las respuestas en páginas e informa métricas de navegación.
 """
 
@@ -7,11 +7,13 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 
+# Configuración de paginación estándar (10 ítems por página)
 class PaginacionEstandar(PageNumberPagination):
     page_size = 10
     page_size_query_param = "page_size"
     max_page_size = 100
 
+    # Estructura del contrato JSON devuelto con metadatos de navegación
     def get_paginated_response(self, data: list[object]) -> Response:
         return Response(
             {

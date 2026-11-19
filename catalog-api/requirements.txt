@@ -1,23 +1,34 @@
-asgiref==3.12.1
-attrs==26.1.0
-Django==6.1.1
-django-cors-headers==4.9.0
-django-filter==26.2
-djangorestframework==3.18.1
-djangorestframework_simplejwt==5.5.1
-drf-spectacular==0.30.0
-gunicorn==26.2.0
-inflection==0.5.1
-jsonschema==4.26.0
-jsonschema-specifications==2025.9.1
-psycopg2-binary==2.9.13
-PyJWT==2.15.1
-python-dotenv==1.2.3
-PyYAML==6.0.3
-referencing==0.37.0
-rpds-py==2026.6.3
-sqlparse==0.6.0
-typing_extensions==4.16.0
-tzdata==2026.4
-uritemplate==4.2.0
-whitenoise==6.12.0
+# --- Núcleo del Framework Web y Servidor ASGI/WSGI ---
+Django==6.1.1                        #- Framework web principal (ORM, Admin, Auth, Rutas)
+asgiref==3.12.1                      # Especificación estándar ASGI para concurrencia y soporte asíncrono en Django
+sqlparse==0.6.0                      # Formateador y analizador sintáctico de consultas SQL usado internamente por Django
+tzdata==2026.4                       # Base de datos de zonas horarias IANA (America/Argentina/Buenos_Aires)
+
+# --- API REST, Filtrado y Documentación OpenAPI (Swagger) ---
+djangorestframework==3.18.1          #- Toolkit para construir la API RESTful (Serializers, ViewSets, Paginación, Throttling)
+django-filter==26.2                  #- Filtrado declarativo por parámetros de URL (FilterSet: categoría, marca, rango de precios)
+drf-spectacular==0.30.0              #- Generador automático de esquemas OpenAPI 3.0 e interfaz interactiva Swagger UI
+
+# --- Seguridad, Autenticación JWT y CORS ---
+djangorestframework_simplejwt==5.5.1 #- Autenticación stateless con JSON Web Tokens (Access/Refresh, Rotación y Blacklist)
+PyJWT==2.15.1                        # Motor criptográfico para firmar, decodificar y verificar tokens JWT (HS256)
+django-cors-headers==4.9.0           #- Control de cabeceras Cross-Origin (CORS) para autorizar peticiones desde el frontend Next.js
+
+# --- Base de Datos y Configuración de Entorno (12-Factor App) ---
+psycopg2-binary==2.9.13              #- Adaptador/driver en C para conectar el ORM de Django con PostgreSQL
+python-dotenv==1.2.3                 #- Carga segura de variables de entorno desde el archivo .env
+
+# --- Producción y Despliegue (Docker / Render) ---
+gunicorn==26.2.0                     #- Servidor HTTP WSGI de alto rendimiento para correr Django en producción
+whitenoise==6.12.0                   #- Servido eficiente y comprimido de archivos estáticos (Django Admin / Swagger) sin requerir Nginx
+
+# --- Dependencias Internas de Validación de Esquemas OpenAPI y Tipado ---
+attrs==26.1.0                        # Declaración declarativa de clases (requerido por jsonschema/drf-spectacular)
+inflection==0.5.1                    # Transformación de cadenas singular/plural/camelCase para el esquema OpenAPI
+jsonschema==4.26.0                   # Validador de estructuras JSON Schema según el estándar OpenAPI 3
+jsonschema-specifications==2025.9.1  # Metadatos y especificaciones oficiales del estándar JSON Schema
+PyYAML==6.0.3                        # Generación y parseo del contrato de la API en formato YAML (/api/schema/)
+referencing==0.37.0                  # Resolución de referencias cruzadas ($ref) dentro de esquemas JSON/OpenAPI
+rpds-py==2026.6.3                    # Estructuras de datos persistentes en Rust usadas por jsonschema para validación rápida
+typing_extensions==4.16.0            # Soporte extendido de Type Hints modernos para análisis estático de tipos
+uritemplate==4.2.0                   # Construcción y parseo de plantillas de rutas con parámetros ({id}) en OpenAPI

@@ -15,6 +15,7 @@ from .serializers import ProductSerializer, CategorySerializer, PromotionSeriali
 from .services import CatalogService
 
 
+# Controlador de Categorías
 @extend_schema(
     description="Endpoint del Catálogo (Categorías). Lectura pública (GET) y administración protegida por JWT (POST, PUT, PATCH, DELETE)."
 )
@@ -28,16 +29,19 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     pagination_class = None
 
+    # Reglas de permisos: lectura libre y modificación solo para admin
     def get_permissions(self) -> list[BasePermission]:
         if self.request.method in SAFE_METHODS:
             return [AllowAny()]
         return [IsAdminUser()]
 
+    # Consulta de categorías delegada a la capa de servicios
     def get_queryset(self) -> QuerySet[Category]:
         is_staff = bool(self.request.user and self.request.user.is_staff)
         return CatalogService.get_category_queryset(is_staff=is_staff)
 
 
+# Controlador de Productos (Paginación, filtros, búsqueda y ordenamiento)
 @extend_schema(
     description="Endpoint del Catálogo (Productos). Soporta paginación, filtrado con django-filter, búsqueda global y ordenamiento por lista blanca."
 )
@@ -55,11 +59,13 @@ class ProductViewSet(viewsets.ModelViewSet):
     ordering_fields = ['name', 'created_at', 'id']
     ordering = ['-id']
 
+    # Reglas de permisos: lectura libre y modificación solo para admin
     def get_permissions(self) -> list[BasePermission]:
         if self.request.method in SAFE_METHODS:
             return [AllowAny()]
         return [IsAdminUser()]
 
+    # Consulta optimizada delegada al servicio para evitar consultas N+1
     @extend_schema(
         parameters=[
             OpenApiParameter(name='category', description='Filtra los productos por el nombre de la categoría (ej: Vinos)', type=str, required=False),
@@ -72,6 +78,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         is_staff = bool(self.request.user and self.request.user.is_staff)
         return CatalogService.get_product_queryset(is_staff=is_staff)
 
+    # Acción personalizada: listado de promociones vigentes hoy
     @extend_schema(
         description="Retorna las promociones vigentes y activas del catálogo."
     )
@@ -85,6 +92,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer = PromotionSerializer(promos, many=True)
         return Response(serializer.data)
 
+    # Acción personalizada: consulta de existencias y precios por modalidad
     @extend_schema(
         description="Consulta el desglose de modalidades y existencias disponibles de un producto específico."
     )

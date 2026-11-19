@@ -3,7 +3,7 @@ Script de Automatización (Extensión del Seed)
 
 Justificación:
 Este script fue creado como una herramienta de automatización rápida para enlazar una 
-imagen de ejemplo (archivo local) a los datos generados por el script de seed (T03).
+imagen de ejemplo (archivo local) a los datos generados por el script de seed.
 Sirve para verificar que la configuración de archivos estáticos (media) en Django 
 funciona correctamente sin necesidad de realizar la carga manualmente por el panel de administración.
 """

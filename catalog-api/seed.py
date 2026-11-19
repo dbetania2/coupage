@@ -1,13 +1,9 @@
 """
-Script de Seed (Carga de Datos Iniciales) - Cumplimiento de Tarea T03 (#10)
-
-Justificación de creación:
-De acuerdo al plan de trabajo (Historia de Usuario 1), este script cumple con la Tarea Técnica T03:
-"Carga de Datos Iniciales y Fixtures del Catálogo (Seed Data)".
+Script de Seed (Carga de Datos Iniciales)
 
 Buenas prácticas aplicadas:
 - Protección de entorno: bloquea la ejecución si DB_MODE='render' para no alterar ni borrar la base real en la nube.
-- Unidad 9.2: Invocación explícita de obj.full_clean() antes de persistir con save() para ejecutar
+- Invocación explícita de obj.full_clean() antes de persistir con save() para ejecutar
   los validadores de campo y el método clean() fuera de DRF/Admin.
 """
 

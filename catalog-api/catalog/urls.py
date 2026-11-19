@@ -14,7 +14,7 @@ from django.conf.urls.static import static
 
 
 class ThrottledTokenObtainPairView(TokenObtainPairView):
-    """Vista de login JWT protegida contra fuerza bruta con ScopedRateThrottle (Unidad 8.4)."""
+    """Vista de login JWT protegida contra fuerza bruta con ScopedRateThrottle."""
 
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "login"

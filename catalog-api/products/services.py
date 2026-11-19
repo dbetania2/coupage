@@ -1,5 +1,5 @@
 """
-Capa de Servicios (Service Layer) del dominio de Catálogo (Unidad 10.4).
+Capa de Servicios (Service Layer) del dominio de Catálogo.
 Desacopla las consultas optimizadas del ORM y las transacciones de creación/edición
 compuestas (Producto + Marca + Modalidad + Precio + Stock + Imagen) de las vistas HTTP.
 """
@@ -23,6 +23,7 @@ from .models import (
 class CatalogService:
     """Servicio de aplicación para operaciones de lectura y escritura del catálogo."""
 
+    # Consulta de categorías según permisos del usuario
     @staticmethod
     def get_category_queryset(is_staff: bool = False) -> QuerySet[Category]:
         """Retorna el QuerySet de categorías según los privilegios del usuario."""
@@ -31,11 +32,12 @@ class CatalogService:
             queryset = queryset.filter(is_active=True)
         return queryset
 
+    # Consulta de productos optimizada con prefetch_related para evitar el problema N+1
     @staticmethod
     def get_product_queryset(is_staff: bool = False) -> QuerySet[Product]:
         """
         Retorna el QuerySet de productos optimizado con prefetch_related
-        para evitar el problema de las N+1 consultas SQL (Unidad 4.3).
+        para evitar el problema de las N+1 consultas SQL.
         """
         queryset = (
             Product.objects.all()
@@ -52,6 +54,7 @@ class CatalogService:
             queryset = queryset.filter(is_active=True)
         return queryset
 
+    # Consulta de promociones activas en la fecha actual
     @staticmethod
     def get_active_promotions() -> QuerySet[Promotion]:
         """Retorna las promociones vigentes y activas en la fecha actual."""
@@ -62,6 +65,7 @@ class CatalogService:
             ends_at__gte=now,
         ).prefetch_related("products")
 
+    # Creación atómica de producto con marca, modalidad, precio, stock e imagen
     @staticmethod
     @transaction.atomic
     def create_product_with_details(validated_data: dict[str, object]) -> Product:
@@ -90,6 +94,8 @@ class CatalogService:
             )
 
         if price_val is not None or sale_mode_type:
+            # TODO: Lanzar DatosInvalidosError (products/exceptions.py) si price_val <= 0 o stock_qty < 0
+            # en lugar de aplicar el valor mínimo por defecto, y usar StockInsuficienteError al descontar stock.
             sale_mode = ProductSaleMode.objects.create(
                 product=product,
                 type=sale_mode_type or "Unidad",
@@ -110,6 +116,7 @@ class CatalogService:
 
         return product
 
+    # Actualización atómica de un producto y sus datos asociados
     @staticmethod
     @transaction.atomic
     def update_product_with_details(
