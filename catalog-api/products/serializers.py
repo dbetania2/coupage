@@ -12,36 +12,42 @@ from .models import (
 from .services import CatalogService
 
 
+# Serializador de Categorías
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name', 'description', 'is_active']
 
 
+# Serializador de Marcas
 class BrandSerializer(serializers.ModelSerializer):
     class Meta:
         model = Brand
         fields = ['id', 'name', 'is_active']
 
 
+# Serializador de Imágenes del Producto
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ['id', 'url', 'is_primary']
 
 
+# Serializador de Precios
 class PriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Price
         fields = ['amount']
 
 
+# Serializador de Inventario y Stock
 class StockSerializer(serializers.ModelSerializer):
     class Meta:
         model = Stock
         fields = ['quantity']
 
 
+# Serializador de Modalidad de Venta con precios y stock anidados
 class ProductSaleModeSerializer(serializers.ModelSerializer):
     prices = PriceSerializer(many=True, read_only=True)
     stock = StockSerializer(read_only=True)
@@ -51,6 +57,7 @@ class ProductSaleModeSerializer(serializers.ModelSerializer):
         fields = ['id', 'type', 'units_per_package', 'prices', 'stock']
 
 
+# Serializador de Promociones y Descuentos
 class PromotionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Promotion
@@ -66,6 +73,7 @@ class PromotionSerializer(serializers.ModelSerializer):
         ]
 
 
+# Serializador Principal de Producto (Lectura anidada y Escritura plana)
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     brand = BrandSerializer(read_only=True)
@@ -107,8 +115,10 @@ class ProductSerializer(serializers.ModelSerializer):
             'is_active',
         ]
 
+    # Delega la creación atómica a la capa de servicios
     def create(self, validated_data: dict[str, object]) -> Product:
         return CatalogService.create_product_with_details(validated_data)
 
+    # Delega la actualización atómica a la capa de servicios
     def update(self, instance: Product, validated_data: dict[str, object]) -> Product:
         return CatalogService.update_product_with_details(instance, validated_data)

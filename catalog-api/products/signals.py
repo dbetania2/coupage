@@ -12,6 +12,7 @@ from .models import Brand, Category, Product, Stock
 logger = logging.getLogger("products.audit")
 
 
+# Limpieza automática de espacios en blanco en nombres antes de guardar
 @receiver(pre_save, sender=Category)
 @receiver(pre_save, sender=Brand)
 @receiver(pre_save, sender=Product)
@@ -25,6 +26,7 @@ def normalizar_nombre_entidad(
         instance.name = instance.name.strip()
 
 
+# Registro de auditoría cada vez que se crea o modifica un producto
 @receiver(post_save, sender=Product)
 def auditar_persistencia_producto(
     sender: type[Product],
@@ -39,6 +41,7 @@ def auditar_persistencia_producto(
     )
 
 
+# Registro de auditoría cada vez que cambia el inventario
 @receiver(post_save, sender=Stock)
 def auditar_actualizacion_stock(
     sender: type[Stock],

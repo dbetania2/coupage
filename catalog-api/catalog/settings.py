@@ -6,6 +6,7 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
+from .db_config import get_database_config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,20 +21,37 @@ if not SECRET_KEY:
 # Modo depuración: False en producción (Render) para ocultar trazas de error sensibles
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-# Seguridad: ALLOWED_HOSTS restringido (soporta Render y localhost)
-raw_allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com')
-ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(',') if h.strip()]
-_render_host = os.getenv('RENDER_EXTERNAL_HOSTNAME')
-if _render_host and _render_host not in ALLOWED_HOSTS and '*' not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(_render_host)
+# Seguridad de Red: ALLOWED_HOSTS y CSRF_TRUSTED_ORIGINS
+# ALLOWED_HOSTS previene ataques de 'HTTP Host header injection', asegurando que
+# Django solo responda a peticiones dirigidas a sus dominios reconocidos.
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com').split(',')
+    if host.strip()
+]
+
+# CSRF_TRUSTED_ORIGINS: dominios confiables para peticiones HTTP con estado
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+
+# Compatibilidad con Render: Render inyecta RENDER_EXTERNAL_HOSTNAME en tiempo de ejecución.
+# Lo agregamos automáticamente a hosts y orígenes seguros sin requerir tocar el archivo .env.
+# TODO: Hacer el código 100% agnóstico al proveedor eliminando este bloque y definiendo
+# los dominios directamente en ALLOWED_HOSTS y CSRF_TRUSTED_ORIGINS desde el .env del servidor.
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    if RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    render_origin = f'https://{RENDER_EXTERNAL_HOSTNAME}'
+    if render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(render_origin)
+
+# En desarrollo local (DEBUG=True) permitimos comodín para facilitar pruebas y contenedores
 if DEBUG and '*' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append('*')
-
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
-if _render_host:
-    _render_origin = f'https://{_render_host}'
-    if _render_origin not in CSRF_TRUSTED_ORIGINS:
-        CSRF_TRUSTED_ORIGINS.append(_render_origin)
 
 # Control de exposición: permite encender/apagar Swagger en Render desde variables de entorno
 ENABLE_SWAGGER = os.getenv('ENABLE_SWAGGER', 'True') == 'True'
@@ -85,86 +103,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'catalog.wsgi.application'
 
-# Database
-if 'test' in sys.argv:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',
-        }
-    }
-elif os.getenv('DB_ENGINE') == 'sqlite':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-else:
-    # Selector de Entorno de Base de Datos: 'local' (por defecto) o 'render'
-    db_mode = os.getenv('DB_MODE', 'local').strip().lower()
-
-    is_on_render = bool(os.getenv('RENDER') or os.getenv('RENDER_EXTERNAL_HOSTNAME'))
-
-    _sslmode = os.getenv('DB_SSLMODE')
-    if not _sslmode:
-        _sslmode = 'require' if (is_on_render or db_mode == 'render' or not DEBUG) else 'disable'
-
-    if is_on_render or db_mode == 'render':
-        # Conexión a Render (Producción o Externa)
-        render_url = os.getenv('RENDER_DATABASE_URL') or os.getenv('RENDER_DB_HOST', '')
-        if render_url.startswith(('postgres://', 'postgresql://')):
-            from urllib.parse import urlparse, unquote
-            parsed = urlparse(render_url)
-            db_name = parsed.path.lstrip('/') or os.getenv('RENDER_DB_NAME', os.getenv('DB_NAME', 'coupage_db'))
-            db_user = unquote(parsed.username) if parsed.username else os.getenv('RENDER_DB_USER', os.getenv('DB_USER', 'postgres'))
-            db_pass = unquote(parsed.password) if parsed.password else os.getenv('RENDER_DB_PASSWORD', os.getenv('DB_PASSWORD', ''))
-            db_host = parsed.hostname
-            db_port = parsed.port or os.getenv('DB_PORT', '5432')
-        else:
-            db_name = os.getenv('DB_NAME') or os.getenv('RENDER_DB_NAME', 'coupage_db')
-            db_user = os.getenv('DB_USER') or os.getenv('RENDER_DB_USER', 'postgres')
-            db_pass = os.getenv('DB_PASSWORD') or os.getenv('RENDER_DB_PASSWORD', '')
-            db_host = os.getenv('DB_HOST') or os.getenv('RENDER_DB_HOST', '127.0.0.1')
-            db_port = os.getenv('DB_PORT') or os.getenv('RENDER_DB_PORT', '5432')
-
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': db_name,
-                'USER': db_user,
-                'PASSWORD': db_pass,
-                'HOST': db_host,
-                'PORT': db_port,
-                'OPTIONS': {
-                    'sslmode': _sslmode,
-                },
-            }
-        }
-        if len(sys.argv) > 1 and sys.argv[1] != 'test':
-            tag = "☁️  [CATALOG-API] Ejecutando en RENDER Cloud" if is_on_render else "⚠️  [CATALOG-API] ATENCIÓN: Conectado a Base de Datos RENDER"
-            sys.stderr.write(f"\n{tag} ({db_host})\n\n")
-
-    else:
-        # Conexión Local (Desarrollo diario)
-        db_name = os.getenv('LOCAL_DB_NAME', os.getenv('DB_NAME', 'coupage_db'))
-        db_user = os.getenv('LOCAL_DB_USER', os.getenv('DB_USER', 'postgres'))
-        db_pass = os.getenv('LOCAL_DB_PASSWORD', os.getenv('DB_PASSWORD', 'postgrespassword'))
-        db_host = os.getenv('LOCAL_DB_HOST', os.getenv('DB_HOST', '127.0.0.1'))
-        db_port = os.getenv('LOCAL_DB_PORT', os.getenv('DB_PORT', '5432'))
-
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': db_name,
-                'USER': db_user,
-                'PASSWORD': db_pass,
-                'HOST': db_host,
-                'PORT': db_port,
-            }
-        }
-        if len(sys.argv) > 1 and sys.argv[1] != 'test':
-            sys.stderr.write(f"\n💻 [CATALOG-API] Usando Base de Datos: LOCAL ({db_host})\n\n")
+# Database (Configuración delegada en catalog/db_config.py: SQLite en test, PostgreSQL en Local/Render)
+DATABASES = get_database_config(BASE_DIR, DEBUG)
 
 # REST Framework & Swagger OpenAPI Configuration
 REST_FRAMEWORK = {
@@ -263,19 +203,19 @@ else:
 
 CORS_ALLOW_CREDENTIALS = True
 
-# Cabeceras de seguridad y endurecimiento en producción cuando DEBUG=False
+# Reglas de seguridad para el servidor en la nube (cuando DEBUG=False)
 if not DEBUG:
-    # Confía en el encabezado de proxy SSL provisto por Render (evita bucles infinitos de redirección)
+    # Le avisa a Django que el servidor de la nube ya usa HTTPS y evita errores de redirección
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    # Protección contra ataques XSS en navegadores heredados
+    # Bloquea código malicioso inyectado desde el navegador
     SECURE_BROWSER_XSS_FILTER = True
-    # Previene ataques basados en confusión de tipo MIME (MIME-sniffing)
+    # Evita que disfracen archivos peligrosos como si fueran imágenes
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    # Mitiga Clickjacking impidiendo que la API sea embebida en iframes
+    # Impide que otra página web incruste nuestra aplicación para engañar al usuario
     X_FRAME_OPTIONS = 'DENY'
-    # Redirección obligatoria a HTTPS en producción (configurable por variable de entorno)
+    # Obliga a que todas las conexiones sean seguras con HTTPS
     SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True') == 'True'
-    # Garantiza que cookies de sesión y CSRF sólo se transmitan por canales cifrados (HTTPS)
+    # Envía las cookies únicamente a través de conexiones seguras y cifradas
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 

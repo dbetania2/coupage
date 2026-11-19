@@ -1,12 +1,13 @@
 from decimal import Decimal
-from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from .exceptions import DatosInvalidosError, RangoFechasInvalidoError
 
+# Modelo: Categoría (Category)
 class Category(models.Model):
     """
-    Modelo de Categoría (RF1/RF2): Permite agrupar los productos (ej: Vinos, Licores, Delicatessen) 
-    para cumplir con la funcionalidad de "Catálogo navegable y filtrable por categoría".
+    Modelo de Categoría: Permite agrupar los productos (ej: Vinos, Licores, Delicatessen) 
+    para la navegación y filtrado del catálogo.
     """
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
@@ -20,6 +21,7 @@ class Category(models.Model):
     def __str__(self) -> str:
         return self.name
 
+# Modelo: Marca (Brand)
 class Brand(models.Model):
     """
     Modelo de Marca: Complementario al catálogo para mejorar los filtros y la presentación 
@@ -34,9 +36,10 @@ class Brand(models.Model):
     def __str__(self) -> str:
         return self.name
 
+# Modelo: Producto (Product)
 class Product(models.Model):
     """
-    Modelo Central de Producto (RF1): Representa el ítem físico en la vinoteca. 
+    Modelo Central de Producto: Representa el ítem en la vinoteca.
     Contiene la información base que se muestra en el catálogo digital.
     """
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='products')
@@ -50,9 +53,10 @@ class Product(models.Model):
     def __str__(self) -> str:
         return self.name
 
+# Modelo: Imagen del Producto (ProductImage)
 class ProductImage(models.Model):
     """
-    Modelo de Imagen (RF1): Mantiene las fotos separadas del producto para permitir 
+    Modelo de Imagen: Mantiene las fotos separadas del producto para permitir 
     múltiples fotos por ítem. Almacena la URL (CDN/Local) para mantener la BD ligera.
     """
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
@@ -64,10 +68,11 @@ class ProductImage(models.Model):
     def __str__(self) -> str:
         return f"Image for {self.product.name}"
 
+# Modelo: Modalidad de Venta (ProductSaleMode - Unidad o Paquete/Caja)
 class ProductSaleMode(models.Model):
     """
-    Modelo de Modalidad de Venta (RF1): Vital para cumplir el requerimiento que exige 
-    modalidad de compra ("unidad o paquete/caja"). Un producto puede tener ambas.
+    Modelo de Modalidad de Venta: Permite comercializar por unidad o paquete/caja.
+    Un mismo producto puede contar con ambas modalidades.
     """
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='sale_modes')
     type = models.CharField(max_length=20)
@@ -89,10 +94,11 @@ class ProductSaleMode(models.Model):
     def __str__(self) -> str:
         return f"{self.product.name} - {self.type}"
 
+# Modelo: Historial de Precios (Price)
 class Price(models.Model):
     """
-    Modelo de Precio (RF1): Desacopla el precio de la modalidad de venta. Permite llevar 
-    un historial de precios (valid_from / valid_until) y mostrar siempre el "precio actualizado".
+    Modelo de Precio: Desacopla el precio de la modalidad de venta. Permite llevar 
+    un historial de precios (valid_from / valid_until) y mostrar siempre el precio actualizado.
     """
     sale_mode = models.ForeignKey(ProductSaleMode, on_delete=models.CASCADE, related_name='prices')
     amount = models.DecimalField(
@@ -108,17 +114,18 @@ class Price(models.Model):
     def clean(self) -> None:
         """Validación cruzada: el inicio de vigencia debe ser anterior al fin de vigencia."""
         if self.valid_from and self.valid_until and self.valid_from >= self.valid_until:
-            raise ValidationError(
-                "Regla de negocio violada: La fecha 'valid_from' debe ser estrictamente anterior a 'valid_until'."
+            raise RangoFechasInvalidoError(
+                "La fecha 'valid_from' debe ser estrictamente anterior a 'valid_until'."
             )
 
     def __str__(self) -> str:
         return f"{self.sale_mode} - ${self.amount}"
 
+# Modelo: Inventario / Stock (Stock)
 class Stock(models.Model):
     """
-    Modelo de Inventario (RF5/RF8): Permite al personal administrativo verificar 
-    la "disponibilidad real" de los productos al revisar las solicitudes de pedidos.
+    Modelo de Inventario: Permite al personal administrativo verificar 
+    la disponibilidad real de los productos al revisar las solicitudes de pedidos.
     """
     sale_mode = models.OneToOneField(ProductSaleMode, on_delete=models.CASCADE, related_name='stock')
     quantity = models.IntegerField(
@@ -135,6 +142,7 @@ class Stock(models.Model):
     def __str__(self) -> str:
         return f"{self.sale_mode} - Stock: {self.quantity}"
 
+# Modelo: Promoción y Descuentos (Promotion)
 class Promotion(models.Model):
     """
     Modelo de Promoción: Permite aplicar descuentos temporales a productos específicos, 
@@ -167,12 +175,12 @@ class Promotion(models.Model):
     def clean(self) -> None:
         """Validación cruzada de fechas y tope porcentual de la promoción."""
         if self.starts_at and self.ends_at and self.starts_at >= self.ends_at:
-            raise ValidationError(
-                "Regla de negocio violada: La fecha 'starts_at' debe ser estrictamente anterior a 'ends_at'."
+            raise RangoFechasInvalidoError(
+                "La fecha 'starts_at' debe ser estrictamente anterior a 'ends_at'."
             )
         if self.discount_type == 'PERCENTAGE' and self.discount_value is not None and self.discount_value > Decimal('100.00'):
-            raise ValidationError(
-                "Regla de negocio violada: Un descuento porcentual no puede superar el 100%."
+            raise DatosInvalidosError(
+                "Un descuento porcentual no puede superar el 100%."
             )
 
     def __str__(self) -> str:

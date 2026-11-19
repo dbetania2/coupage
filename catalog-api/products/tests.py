@@ -1,3 +1,9 @@
+"""
+Suite Integral de Pruebas Automatizadas (19 tests) para catalog-api.
+Cubre endpoints de lectura, filtros declarativos, paginación, acciones personalizadas,
+validaciones cruzadas del modelo, señales de auditoría y seguridad JWT con throttling.
+"""
+
 from datetime import timedelta
 from decimal import Decimal
 from django.core.cache import cache
@@ -9,6 +15,7 @@ from rest_framework.test import APITestCase
 from .models import Category, Brand, Product, ProductSaleMode, Price, Stock, Promotion
 
 
+# Pruebas de Endpoints de Categorías
 class CategoryAPITests(APITestCase):
     def setUp(self) -> None:
         cache.clear()
@@ -50,6 +57,7 @@ class CategoryAPITests(APITestCase):
         self.assertEqual(response.data['name'], self.active_category_1.name)
 
 
+# Pruebas de Productos, Paginación, Filtros y Acciones
 class ProductAPITests(APITestCase):
     def setUp(self) -> None:
         cache.clear()
@@ -73,7 +81,7 @@ class ProductAPITests(APITestCase):
         )
 
     def test_list_products_paginated_contract(self) -> None:
-        """Verifica que GET /api/products/ retorne el contrato de PaginacionEstandar (Unidad 8.1)"""
+        """Verifica que GET /api/products/ retorne el contrato de PaginacionEstandar"""
         url = reverse('product-list')
         response = self.client.get(url)
 
@@ -86,7 +94,7 @@ class ProductAPITests(APITestCase):
         self.assertEqual(len(response.data['results']), 2)
 
     def test_filter_products_by_category(self) -> None:
-        """Verifica el filtrado declarativo con django-filter ?category=Vinos (Unidad 8.2)"""
+        """Verifica el filtrado declarativo con django-filter ?category=Vinos"""
         url = reverse('product-list')
         response = self.client.get(url, {'category': 'Vinos'})
 
@@ -95,7 +103,7 @@ class ProductAPITests(APITestCase):
         self.assertEqual(response.data['results'][0]['name'], "Rutini Malbec")
 
     def test_filter_products_by_nonexistent_category(self) -> None:
-        """Verifica que filtrar por una categoría inexistente retorne lista vacía con 200 OK (T04)"""
+        """Verifica que filtrar por una categoría inexistente retorne lista vacía con 200 OK"""
         url = reverse('product-list')
         response = self.client.get(url, {'category': 'CategoriaInexistenteQueNoExiste'})
 
@@ -103,7 +111,7 @@ class ProductAPITests(APITestCase):
         self.assertEqual(len(response.data['results']), 0)
 
     def test_search_and_ordering_products(self) -> None:
-        """Verifica SearchFilter (?search=) y OrderingFilter (?ordering=name) (Unidad 8.3)"""
+        """Verifica SearchFilter (?search=) y OrderingFilter (?ordering=name)"""
         url = reverse('product-list')
         search_resp = self.client.get(url, {'search': 'Whisky'})
         self.assertEqual(search_resp.status_code, status.HTTP_200_OK)
@@ -116,7 +124,7 @@ class ProductAPITests(APITestCase):
         self.assertEqual(names, ["Rutini Malbec", "Whisky Rutini Blend"])
 
     def test_custom_actions_stock_and_promotions(self) -> None:
-        """Verifica los endpoints personalizados con @action: /stock/ y /promotions/ (Unidad 7.4)"""
+        """Verifica los endpoints personalizados con @action: /stock/ y /promotions/"""
         sm = ProductSaleMode.objects.create(product=self.product_vino, type="Unidad", units_per_package=1)
         Price.objects.create(sale_mode=sm, amount=Decimal("15000.00"), valid_from=timezone.now(), is_active=True)
         Stock.objects.create(sale_mode=sm, quantity=12)
@@ -133,8 +141,9 @@ class ProductAPITests(APITestCase):
         self.assertEqual(promo_resp.status_code, status.HTTP_200_OK)
 
 
+# Pruebas de Validaciones de Modelo y Señales
 class ModelValidationAndSignalTests(APITestCase):
-    """Pruebas de validaciones de modelo clean(), MinValueValidator y Signals pre_save (Unidad 9)."""
+    """Pruebas de validaciones de modelo clean(), MinValueValidator y Signals pre_save."""
 
     def setUp(self) -> None:
         cache.clear()
@@ -181,9 +190,10 @@ class ModelValidationAndSignalTests(APITestCase):
             invalid_promo.full_clean()
 
 
+# Pruebas de Seguridad, JWT, Throttling 429 y Permisos
 class AuthenticationAndPermissionAPITests(APITestCase):
     """
-    Pruebas de Autenticación JWT (15m, rotación, Blacklist), Throttling y Permisos (Unidades 8.4 y 10).
+    Pruebas de Autenticación JWT (15m, rotación, Blacklist), Throttling y Permisos.
     """
 
     def setUp(self) -> None:
@@ -231,7 +241,7 @@ class AuthenticationAndPermissionAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_refresh_token_and_blacklist_logout(self) -> None:
-        """Verifica rotación de refresh token y revocación en Blacklist al hacer logout (Unidad 10.2)"""
+        """Verifica rotación de refresh token y revocación en Blacklist al hacer logout"""
         url_obtain = reverse('token_obtain_pair')
         obtain_resp = self.client.post(url_obtain, {
             'username': 'admin_test',
@@ -255,7 +265,7 @@ class AuthenticationAndPermissionAPITests(APITestCase):
         self.assertEqual(reuse_resp.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_login_rate_throttling_returns_429(self) -> None:
-        """Verifica que superar el límite de 10 intentos por minuto en login dispare HTTP 429 (Unidad 8.4)"""
+        """Verifica que superar el límite de 10 intentos por minuto en login dispare HTTP 429"""
         url = reverse('token_obtain_pair')
         statuses: list[int] = []
         for _ in range(12):
